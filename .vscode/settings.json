@@ -71,7 +71,7 @@
     "__pycache__": true,
     "gen": true,
     "bin":true,
-    "test_project":true,
+    // "test_project":true,
     "tools":true,
     ".clang-format": true,
     ".editorconfig": true,
