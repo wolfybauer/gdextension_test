@@ -62,13 +62,13 @@ public:
             _right->get_left_leaf_nodes(out, lim, level + 1);
     }
 
-    PackedVector3Array get_sites_gd() const {
-        PackedVector3Array arr;
-        arr.resize(_sites.size());
-        for (size_t i = 0; i < _sites.size(); ++i)
-            arr[i] = _sites[i];
-        return arr;
-    }
+    // PackedVector3Array get_sites_gd() const {
+    //     PackedVector3Array arr;
+    //     arr.resize(_sites.size());
+    //     for (size_t i = 0; i < _sites.size(); ++i)
+    //         arr[i] = _sites[i];
+    //     return arr;
+    // }
     void free_tree() {
         // delete children first
         if (_left) {

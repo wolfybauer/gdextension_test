@@ -181,14 +181,14 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
     Ref<SurfaceTool> surface_tool_a;
     surface_tool_a.instantiate();
     surface_tool_a->begin(Mesh::PRIMITIVE_TRIANGLES);
-    surface_tool_a->set_material(vst_node->_mesh_instance->get_surface_override_material(0));
+    surface_tool_a->set_material(vst_node->_mesh_instance->get_active_material(0));
     surface_tool_a->set_smooth_group(-1);
 
     // Create SurfaceTool to construct the BELOW mesh
     Ref<SurfaceTool> surface_tool_b;
     surface_tool_b.instantiate();
     surface_tool_b->begin(Mesh::PRIMITIVE_TRIANGLES);
-    surface_tool_b->set_material(vst_node->_mesh_instance->get_surface_override_material(0));
+    surface_tool_b->set_material(vst_node->_mesh_instance->get_active_material(0));
     surface_tool_b->set_smooth_group(-1);
 
     // ---------------------------------------------------------

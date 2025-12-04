@@ -20,88 +20,141 @@ var _root: VSTNode = null
 ## The [DestronoiNode] generates [code]2^n[/code] fragments, where [code]n[/code] is the [param tree_height] of the VST.
 @export_range(1,8) var tree_height: int = 1
 @export var free_after_seconds:float = 2.0
+@export var inside_material: Material
+
 
 ## Initializes the [param _root] with a copy of the sibling [MeshInstance3D].
 ## The mesh is subdivided according to the [param tree_height].
 func _ready():
-		# Set root geometry to sibling MeshInstance3D
-		var parent = get_parent()
-		var mesh_instance = null
-		for child in parent.get_children():
-				if(child is MeshInstance3D):
-						mesh_instance = child
-						break
+	# Set root geometry to sibling MeshInstance3D
+	var parent = get_parent()
+	var mesh_instance = null
+	for child in parent.get_children():
+			if(child is MeshInstance3D):
+					mesh_instance = child
+					break
 
-		if(mesh_instance == null):
-				print("[Destronoi] No MeshInstance3D sibling found")
-				return # no mesh; return early
-		_root = VSTNode.new(mesh_instance)
+	if(mesh_instance == null):
+			print("[Destronoi] No MeshInstance3D sibling found")
+			return # no mesh; return early
+	_root = VSTNode.new(mesh_instance)
 
-		# Plot 2 sites for the subdivision
-		plot_sites_random(_root)
-		# Generate 2 children from the root
-		bisect(_root)
-		# Perform additional subdivisions depending on tree height
-		for i in range(tree_height - 1):
-				var leaves = []
-				_root.get_leaf_nodes(_root,leaves);
-				for leaf in range(leaves.size()):
-						plot_sites_random(leaves[leaf])
-						bisect(leaves[leaf])
+	# Plot 2 sites for the subdivision
+	plot_sites_random(_root)
+	# Generate 2 children from the root
+	bisect(_root)
+	# Perform additional subdivisions depending on tree height
+	for i in range(tree_height - 1):
+			var leaves = []
+			_root.get_leaf_nodes(_root,leaves);
+			for leaf in range(leaves.size()):
+				plot_sites_random(leaves[leaf])
+				bisect(leaves[leaf])
+
+func _emit_vertex(st, data, vid):
+	var pos = data.get_vertex(vid)
+	if not pos:
+		return
+
+	st.set_uv(data.get_vertex_uv(vid))
+	st.set_normal(data.get_vertex_normal(vid))
+	st.set_tangent(data.get_vertex_tangent(vid))
+	st.set_color(data.get_vertex_color(vid))
+	st.add_vertex(pos)
+
+
+
+func _emit_intersection(st, data, a_id, b_id, p):
+	var a = data.get_vertex(a_id)
+	var b = data.get_vertex(b_id)
+
+	var t = a.distance_to(p) / max(a.distance_to(b), 0.000001)
+
+	# uv
+	var uv = data.get_vertex_uv(a_id).lerp(data.get_vertex_uv(b_id), t)
+
+	# normal
+	var nrm = data.get_vertex_normal(a_id).lerp(
+		data.get_vertex_normal(b_id), t
+	).normalized()
+
+	# color
+	var col = data.get_vertex_color(a_id).lerp(
+		data.get_vertex_color(b_id), t
+	)
+
+	# tangent
+	var ta = data.get_vertex_tangent(a_id)
+	var tb = data.get_vertex_tangent(b_id)
+	var tan = Plane(
+		ta.x + (tb.x - ta.x) * t,
+		ta.y + (tb.y - ta.y) * t,
+		ta.z + (tb.z - ta.z) * t,
+		ta.d + (tb.d - ta.d) * t
+	)
+
+	st.set_uv(uv)
+	st.set_normal(nrm)
+	st.set_tangent(tan)
+	st.set_color(col)
+	st.add_vertex(p)
+
+
+
 
 ## Assigns data to [method VSTNode._sites] of a specified [VSTNode].
 ## [br][color=yellow]Note:[/color] Site coordinates are relative to the centre of [member VSTNode._mesh_instance].
 ## [br][color=yellow]Note:[/color] Reusing this method will overwrite any existing sites.
 func plot_sites(vst_node: VSTNode, site1: Vector3, site2: Vector3):
-		vst_node._sites = [vst_node._mesh_instance.position + site1, vst_node._mesh_instance.position + site2]
+	vst_node._sites = [vst_node._mesh_instance.position + site1, vst_node._mesh_instance.position + site2]
 
 ## Randomly plots a pair of valid sites using rejection sampling. A site is
 ## considered valid if it falls within the volume of the [member VSTNode._mesh_instance].
 ## [br][color=yellow]Note:[/color] Site coordinates are relative to the centre of [member VSTNode._mesh_instance].
 ## [br][color=yellow]Note:[/color] Reusing this method will overwrite any existing sites.
 func plot_sites_random(vst_node: VSTNode):
-		vst_node._sites = [] # clear existing sites
+	vst_node._sites = [] # clear existing sites
 
-		var site : Vector3
+	var site : Vector3
 
-		# MeshDataTool used to parse the mesh faces
-		var mdt = MeshDataTool.new()
-		mdt.create_from_surface(vst_node._mesh_instance.mesh,0)
+	# MeshDataTool used to parse the mesh faces
+	var mdt = MeshDataTool.new()
+	mdt.create_from_surface(vst_node._mesh_instance.mesh,0)
 
-		# Bounding box used to get range limits for random points
-		var aabb : AABB = vst_node._mesh_instance.get_aabb()
-		var min_vec : Vector3 = aabb.position
-		var max_vec : Vector3 = aabb.end
-		aabb.get_center()
+	# Bounding box used to get range limits for random points
+	var aabb : AABB = vst_node._mesh_instance.get_aabb()
+	var min_vec : Vector3 = aabb.position
+	var max_vec : Vector3 = aabb.end
+	aabb.get_center()
 
-		# Centers of each axis
-		var avg_x = (max_vec.x + min_vec.x)/2.0
-		var avg_y = (max_vec.y + min_vec.y)/2.0
-		var avg_z = (max_vec.z + min_vec.z)/2.0
+	# Centers of each axis
+	var avg_x = (max_vec.x + min_vec.x)/2.0
+	var avg_y = (max_vec.y + min_vec.y)/2.0
+	var avg_z = (max_vec.z + min_vec.z)/2.0
 
-		var dev = 0.1 # deviation from the mean
-		var num_intersections = 0
-		var face_v_ids = []
-		var verts = []
-		var intersection_point
-		# keep generating sites until they are within the mesh
-		# a valid pair of sites are both inside the mesh boundary
-		while vst_node._sites.size() < 2:
+	var dev = 0.1 # deviation from the mean
+	var num_intersections = 0
+	var face_v_ids = []
+	var verts = []
+	var intersection_point
+	# keep generating sites until they are within the mesh
+	# a valid pair of sites are both inside the mesh boundary
+	while vst_node._sites.size() < 2:
 
-				# normally distributed about AABB center
-				site = Vector3(randfn(avg_x, dev),randfn(avg_y, dev),randfn(avg_z, dev))
+		# normally distributed about AABB center
+		site = Vector3(randfn(avg_x, dev),randfn(avg_y, dev),randfn(avg_z, dev))
 
-				num_intersections = 0
-				for tri in range(mdt.get_face_count()):
-						face_v_ids = [mdt.get_face_vertex(tri,0),mdt.get_face_vertex(tri,1),mdt.get_face_vertex(tri,2)]
-						verts = [mdt.get_vertex(face_v_ids[0]),mdt.get_vertex(face_v_ids[1]),mdt.get_vertex(face_v_ids[2])]
-						intersection_point = Geometry3D.ray_intersects_triangle(site, Vector3.UP, verts[0], verts[1], verts[2])
+		num_intersections = 0
+		for tri in range(mdt.get_face_count()):
+			face_v_ids = [mdt.get_face_vertex(tri,0),mdt.get_face_vertex(tri,1),mdt.get_face_vertex(tri,2)]
+			verts = [mdt.get_vertex(face_v_ids[0]),mdt.get_vertex(face_v_ids[1]),mdt.get_vertex(face_v_ids[2])]
+			intersection_point = Geometry3D.ray_intersects_triangle(site, Vector3.UP, verts[0], verts[1], verts[2])
 
-						if(intersection_point != null):
-								num_intersections += 1
+			if(intersection_point != null):
+				num_intersections += 1
 
-				if(num_intersections == 1): # must be inside; add
-						vst_node._sites.append(site)
+		if(num_intersections == 1): # must be inside; add
+			vst_node._sites.append(site)
 
 ## Bisects the [MeshInstance3D] of a [VSTNode] and creates 2 child [VSTNodes] to
 ## store the new geometry.
@@ -130,17 +183,22 @@ func bisect(vst_node: VSTNode) -> bool:
 		# Create MeshDataTool to parse mesh data of current VSTNode
 		var data_tool := MeshDataTool.new()
 		data_tool.create_from_surface(vst_node._mesh_instance.mesh, 0)
+		
+		
+		var base_material = vst_node._mesh_instance.get_active_material(0)
 
 		# Create SurfaceTool to construct the ABOVE mesh
 		var surface_tool_a := SurfaceTool.new()
 		surface_tool_a.begin(Mesh.PRIMITIVE_TRIANGLES)
-		surface_tool_a.set_material(vst_node.get_override_material())
+		#surface_tool_a.set_material(vst_node.get_override_material())
+		surface_tool_a.set_material(base_material)
 		surface_tool_a.set_smooth_group(-1)
 
 		# Create SurfaceTool to construct the BELOW mesh
 		var surface_tool_b := SurfaceTool.new()
 		surface_tool_b.begin(Mesh.PRIMITIVE_TRIANGLES)
-		surface_tool_b.set_material(vst_node.get_override_material())
+		#surface_tool_b.set_material(vst_node.get_override_material())
+		surface_tool_a.set_material(base_material)
 		surface_tool_b.set_smooth_group(-1)
 
 		## GENERATE SUB MESHES
@@ -150,7 +208,7 @@ func bisect(vst_node: VSTNode) -> bool:
 				# Intermediate surface tool to construct the new mesh
 				var surface_tool := SurfaceTool.new()
 				surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-				surface_tool.set_material(vst_node._mesh_instance.get_active_material(0))
+				surface_tool.set_material(base_material)
 				surface_tool.set_smooth_group(-1)
 
 				# invert normal for other side (i.e. treat below as above and repeat the process)
@@ -182,7 +240,7 @@ func bisect(vst_node: VSTNode) -> bool:
 								for v_id in face_vertices:
 										if data_tool.get_vertex_color(v_id) == inner_color:
 												surface_tool.set_color(inner_color)
-										surface_tool.add_vertex(data_tool.get_vertex(v_id))
+										_emit_vertex(surface_tool, data_tool, v_id)
 								continue
 
 						# INTERSECTION CASE 1: ONE point above the plane
@@ -195,62 +253,129 @@ func bisect(vst_node: VSTNode) -> bool:
 												index_after = (index + 1) % 3
 												index_before = (index + 2) % 3
 												break
-								var intersection_after = plane.intersects_segment(data_tool.get_vertex(vertices_above_plane[0]), data_tool.get_vertex(face_vertices[index_after]))
-								intersection_points.append(intersection_after)
-								var intersection_before = plane.intersects_segment(data_tool.get_vertex(vertices_above_plane[0]), data_tool.get_vertex(face_vertices[index_before]))
-								intersection_points.append(intersection_before)
-								coplanar_vertices.append(intersection_after)
-								coplanar_vertices.append(intersection_before)
+								var p_after = plane.intersects_segment(
+									data_tool.get_vertex(vertices_above_plane[0]),
+									data_tool.get_vertex(face_vertices[index_after])
+								)
+
+								intersection_points.append({
+									"a_id": vertices_above_plane[0],
+									"b_id": face_vertices[index_after],
+									"p": p_after
+								})
+
+								coplanar_vertices.append(p_after)
+
+								var p_before = plane.intersects_segment(
+									data_tool.get_vertex(vertices_above_plane[0]),
+									data_tool.get_vertex(face_vertices[index_before])
+								)
+
+								intersection_points.append({
+									"a_id": vertices_above_plane[0],
+									"b_id": face_vertices[index_before],
+									"p": p_before
+								})
+
+								coplanar_vertices.append(p_before)
+
 
 								# TRIANGLE CREATION
 								if data_tool.get_vertex_color(vertices_above_plane[0]) == inner_color:
 										surface_tool.set_color(inner_color)
-								surface_tool.add_vertex(data_tool.get_vertex(vertices_above_plane[0]))
+								_emit_vertex(surface_tool, data_tool, vertices_above_plane[0])
+								
+								var A = intersection_points[0]
+								_emit_intersection(surface_tool, data_tool, A.a_id, A.b_id, A.p)
 
-								surface_tool.add_vertex(intersection_points[0])
-								surface_tool.add_vertex(intersection_points[1])
+								var B = intersection_points[1]
+								_emit_intersection(surface_tool, data_tool, B.a_id, B.b_id, B.p)
+
 								continue
 
 						# INTERSECTION CASE 2: TWO points above the plane
-						if(vertices_above_plane.size() == 2):
-								var index_remaining: int = -1 # index of the point below the plane
-								# Ensure vertices are in the cyclic cw winding order
-								if(vertices_above_plane[0] != face_vertices[1] && vertices_above_plane[1] != face_vertices[1]):
-										vertices_above_plane.reverse()
-										index_remaining = 1
-								elif(vertices_above_plane[0] != face_vertices[0] && vertices_above_plane[1] != face_vertices[0]):
-										index_remaining = 0
-								else:
-										index_remaining = 2
+						if (vertices_above_plane.size() == 2):
 
-								var intersection_after = plane.intersects_segment(data_tool.get_vertex(vertices_above_plane[1]), data_tool.get_vertex(face_vertices[index_remaining]))
-								intersection_points.append(intersection_after)
-								var intersection_before = plane.intersects_segment(data_tool.get_vertex(vertices_above_plane[0]), data_tool.get_vertex(face_vertices[index_remaining]))
-								intersection_points.append(intersection_before)
-								coplanar_vertices.append(intersection_after)
-								coplanar_vertices.append(intersection_before)
-								# find shortest 'cross-length' to make 2 triangles from 4 points
-								var index_shortest := 0;
-								var dist_0 = data_tool.get_vertex(vertices_above_plane[0]).distance_to(intersection_points[0])
-								var dist_1 = data_tool.get_vertex(vertices_above_plane[1]).distance_to(intersection_points[1])
-								if dist_1 > dist_0 : index_shortest = 1;
+							var index_remaining: int = -1 # index of the point below the plane
 
-								#TRIANGLE 1
-								if data_tool.get_vertex_color(vertices_above_plane[0]) == inner_color:
-										surface_tool.set_color(inner_color)
-								surface_tool.add_vertex(data_tool.get_vertex(vertices_above_plane[0]))
+							# Ensure vertices are in cyclic CW order
+							if (vertices_above_plane[0] != face_vertices[1] 
+							and vertices_above_plane[1] != face_vertices[1]):
+								vertices_above_plane.reverse()
+								index_remaining = 1
+							elif (vertices_above_plane[0] != face_vertices[0] 
+							and vertices_above_plane[1] != face_vertices[0]):
+								index_remaining = 0
+							else:
+								index_remaining = 2
 
-								if data_tool.get_vertex_color(vertices_above_plane[1]) == inner_color:
-										surface_tool.set_color(inner_color)
-								surface_tool.add_vertex(data_tool.get_vertex(vertices_above_plane[1]))
+							# compute intersections (FIXED: now actually defined here)
+							var intersection_after = plane.intersects_segment(
+								data_tool.get_vertex(vertices_above_plane[1]),
+								data_tool.get_vertex(face_vertices[index_remaining])
+							)
 
-								surface_tool.add_vertex(intersection_points[index_shortest])
+							var intersection_before = plane.intersects_segment(
+								data_tool.get_vertex(vertices_above_plane[0]),
+								data_tool.get_vertex(face_vertices[index_remaining])
+							)
 
-								# TRIANGLE 2
-								surface_tool.add_vertex(intersection_points[0])
-								surface_tool.add_vertex(intersection_points[1])
-								surface_tool.add_vertex(data_tool.get_vertex(vertices_above_plane[index_shortest]))
-								continue
+							# save structured intersection data
+							var ip_after = {
+								"a_id": vertices_above_plane[1],
+								"b_id": face_vertices[index_remaining],
+								"p": intersection_after
+							}
+
+							var ip_before = {
+								"a_id": vertices_above_plane[0],
+								"b_id": face_vertices[index_remaining],
+								"p": intersection_before
+							}
+
+							intersection_points.append(ip_after)
+							intersection_points.append(ip_before)
+
+							# preserve your original coplanar geometry
+							coplanar_vertices.append(intersection_after)
+							coplanar_vertices.append(intersection_before)
+
+							# choose diagonal
+							var dist_0 = data_tool.get_vertex(vertices_above_plane[0]).distance_to(intersection_after)
+							var dist_1 = data_tool.get_vertex(vertices_above_plane[1]).distance_to(intersection_before)
+
+							var index_shortest := 0
+							if dist_1 > dist_0:
+								index_shortest = 1
+
+							#
+							# TRIANGLE 1
+							#
+							if data_tool.get_vertex_color(vertices_above_plane[0]) == inner_color:
+								surface_tool.set_color(inner_color)
+							_emit_vertex(surface_tool, data_tool, vertices_above_plane[0])
+
+							if data_tool.get_vertex_color(vertices_above_plane[1]) == inner_color:
+								surface_tool.set_color(inner_color)
+							_emit_vertex(surface_tool, data_tool, vertices_above_plane[1])
+
+							# use structured intersection instead of raw vector
+							var ip_short = intersection_points[index_shortest]
+							_emit_intersection(surface_tool, data_tool, ip_short.a_id, ip_short.b_id, ip_short.p)
+
+							#
+							# TRIANGLE 2
+							#
+							var ip0 = intersection_points[0]
+							var ip1 = intersection_points[1]
+
+							_emit_intersection(surface_tool, data_tool, ip0.a_id, ip0.b_id, ip0.p)
+							_emit_intersection(surface_tool, data_tool, ip1.a_id, ip1.b_id, ip1.p)
+
+							_emit_vertex(surface_tool, data_tool, vertices_above_plane[index_shortest])
+
+							continue
+
 				# END for face in range(data_tool.get_face_count())
 
 				var centroid := Vector3(0,0,0)
@@ -281,10 +406,12 @@ func bisect(vst_node: VSTNode) -> bool:
 		# Left is above, right is below; this decision was arbitrary
 		var mesh_instance_above := MeshInstance3D.new()
 		mesh_instance_above.mesh = surface_tool_a.commit()
+		mesh_instance_above.set_surface_override_material(0, base_material)
 		vst_node._left = VSTNode.new(mesh_instance_above, vst_node._level + 1, VSTNode.Laterality.LEFT)
 
 		var mesh_instance_below := MeshInstance3D.new()
 		mesh_instance_below.mesh = surface_tool_b.commit()
+		mesh_instance_below.set_surface_override_material(0, base_material)
 		vst_node._right = VSTNode.new(mesh_instance_below, vst_node._level + 1, VSTNode.Laterality.RIGHT)
 
 		return true
