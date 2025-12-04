@@ -1,12 +1,3 @@
-#include "godot_cpp/variant/callable.hpp"
-#include <random>
-
-static std::mt19937 rng(std::random_device{}());
-
-static float gaussian(float mean, float dev) {
-	return std::normal_distribution<float>(mean, dev)(rng);
-}
-
 #include "destronoi.hpp"
 #include "vst_node.hpp"
 
@@ -23,6 +14,7 @@ static float gaussian(float mean, float dev) {
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scene_tree_timer.hpp>
 #include <godot_cpp/variant/callable.hpp>
+#include <godot_cpp/classes/random_number_generator.hpp>
 
 using namespace godot;
 
@@ -38,12 +30,12 @@ void DestronoiNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_visible_seconds"), &DestronoiNode::get_visible_seconds);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "tree_height", PROPERTY_HINT_RANGE, "1,8,1"),
+			PropertyInfo(Variant::INT, "tree_height", PROPERTY_HINT_RANGE, "1,20,1"),
 			"set_tree_height",
 			"get_tree_height");
     
     ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "visible_seconds", PROPERTY_HINT_RANGE, "1.0,20.0,0.1"),
+			PropertyInfo(Variant::FLOAT, "visible_seconds", PROPERTY_HINT_RANGE, "-1.0,20.0,0.1"),
 			"set_visible_seconds",
 			"get_visible_seconds");
 }
@@ -69,6 +61,12 @@ void DestronoiNode::generate() {
 		return;
     }
 
+    Ref<RandomNumberGenerator> rng;
+    if(rng.is_null()) {
+        rng.instantiate();
+        rng->randomize();
+    }
+
 	MeshInstance3D *mesh_instance = nullptr;
 
 	for (int i = 0; i < parent->get_child_count(); i++) {
@@ -86,7 +84,7 @@ void DestronoiNode::generate() {
 
 	_root = memnew(VSTNode(mesh_instance));
 
-	plot_sites_random(_root);
+	plot_sites_random(_root, rng);
 	bisect(_root);
 
 	for (int i = 0; i < tree_height - 1; i++) {
@@ -94,7 +92,7 @@ void DestronoiNode::generate() {
 		_root->get_leaf_nodes(leaves);
 
 		for (VSTNode *leaf : leaves) {
-			plot_sites_random(leaf);
+			plot_sites_random(leaf, rng);
 			bisect(leaf);
 		}
 	}
@@ -106,7 +104,7 @@ void DestronoiNode::plot_sites(VSTNode *node, const Vector3 &s1, const Vector3 &
 	node->_sites.push_back(node->_mesh_instance->get_position() + s2);
 }
 
-void DestronoiNode::plot_sites_random(VSTNode *node) {
+void DestronoiNode::plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> rng) {
 	node->_sites.clear();
 
 	Ref<MeshDataTool> mdt;
@@ -125,9 +123,9 @@ void DestronoiNode::plot_sites_random(VSTNode *node) {
 
 	while (node->_sites.size() < 2) {
 		Vector3 site(
-				gaussian(avg_x, dev),
-				gaussian(avg_y, dev),
-				gaussian(avg_z, dev));
+				rng->randfn(avg_x, dev),
+				rng->randfn(avg_y, dev),
+				rng->randfn(avg_z, dev));
 
 		int num_intersections = 0;
 
@@ -521,7 +519,9 @@ void DestronoiNode::destroy(int left_val, int right_val, float combust_velocity)
     reparent(base_object->get_parent());
     base_object->queue_free();
 
-    Ref<SceneTreeTimer> tm = get_tree()->create_timer(visible_seconds, true);
-    tm->connect("timeout", Callable(this, "_cleanup"));
+    if(visible_seconds > 0.0f) {
+        Ref<SceneTreeTimer> tm = get_tree()->create_timer(visible_seconds, true);
+        tm->connect("timeout", Callable(this, "_cleanup"));
+    }
 }
 

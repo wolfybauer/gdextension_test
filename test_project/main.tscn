@@ -65,7 +65,6 @@ mesh = SubResource("ArrayMesh_ig7tw")
 shape = SubResource("BoxShape3D_0xm2m")
 
 [node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP"]
-tree_height = 7
 
 [node name="BoxGD" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 0)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "godot_cpp/classes/random_number_generator.hpp"
 #include <vector>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
@@ -9,6 +10,7 @@ namespace godot {
 
 class VSTNode;
 class RigidBody3D;
+class RandomNumberGenerator;
 
 class DestronoiNode : public Node {
     GDCLASS(DestronoiNode, Node);
@@ -32,7 +34,7 @@ protected:
     static void _bind_methods();
 
 private:
-    int tree_height = 1;                 // @export_range(1,8)
+    int tree_height = 5;                 // @export_range(1,8)
     float visible_seconds = 1.0f;
     VSTNode *_root = nullptr;            // root of the VST
 
@@ -40,7 +42,7 @@ private:
                     const Vector3 &s1,
                     const Vector3 &s2);
 
-    void plot_sites_random(VSTNode *node);
+    void plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> rng);
 
     bool bisect(VSTNode *node);
 
