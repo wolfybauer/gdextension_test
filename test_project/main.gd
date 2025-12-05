@@ -8,23 +8,19 @@ func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed('ui_accept'):
 		pop_boxes()
 
-func _ready() -> void:
-	for n in get_children(true):
-		for g in n.get_children():
-			print(g.name)
-			if g is DestronoiNode:
-				print(n.name, 'generated', g.name)
-				g.generate()
-
+func pop_some(filter:String):
+	for n in get_children():
+		if not (filter in n.name and n.visible):
+			continue
+		var b = n.find_child('Destronoi*')
+		if not b: continue
+		if b is DestronoiNode:
+			b.destroy(5.0, Vector3(5,0,0))
+		else:
+			(b as DestronoiGD).destroy(5,5,6.0)
 func pop_boxes():
 	if not popped_once:
-		for n in get_children():
-			if n.visible and 'Box' in n.name:
-				var b = n.find_child('Destronoi*')
-				if b: b.destroy(5, 5, 6.0)
+		pop_some('Box')
 		popped_once = true
 	else:
-		for n in get_children():
-			if n.visible and 'Glass' in n.name:
-				var b = n.find_child('Destronoi*')
-				if b: b.destroy(5, 5, 6.0)
+		pop_some('Glass')

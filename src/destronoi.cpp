@@ -1,8 +1,10 @@
 #include "destronoi.hpp"
 #include "godot_cpp/core/defs.hpp"
+#include "godot_cpp/core/math.hpp"
 #include "godot_cpp/variant/vector3.hpp"
 #include "vst_node.hpp"
 
+#include <cmath>
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/geometry3d.hpp>
 #include <godot_cpp/classes/mesh_data_tool.hpp>
@@ -24,27 +26,27 @@ using namespace godot;
 // GODOT INTERFACE
 
 void DestronoiNode::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("generate"), &DestronoiNode::generate);
-	ClassDB::bind_method(D_METHOD("destroy", "left_val", "right_val", "combust_velocity"), &DestronoiNode::destroy);
+	// ClassDB::bind_method(D_METHOD("_ready"), &DestronoiNode::_ready);
+	ClassDB::bind_method(D_METHOD("destroy", "radial_velocity", "linear_velocity"), &DestronoiNode::destroy, DEFVAL(5.0), DEFVAL(Vector3()));
     ClassDB::bind_method(D_METHOD("_cleanup"), &DestronoiNode::_cleanup);
 
-	ClassDB::bind_method(D_METHOD("set_tree_height", "h"), &DestronoiNode::set_tree_height);
-	ClassDB::bind_method(D_METHOD("get_tree_height"), &DestronoiNode::get_tree_height);
+	ClassDB::bind_method(D_METHOD("set_granularity", "h"), &DestronoiNode::set_granularity);
+	ClassDB::bind_method(D_METHOD("get_granularity"), &DestronoiNode::get_granularity);
 
-    ClassDB::bind_method(D_METHOD("set_visible_seconds", "s"), &DestronoiNode::set_visible_seconds);
-	ClassDB::bind_method(D_METHOD("get_visible_seconds"), &DestronoiNode::get_visible_seconds);
+    ClassDB::bind_method(D_METHOD("set_persistence", "s"), &DestronoiNode::set_persistence);
+	ClassDB::bind_method(D_METHOD("get_persistence"), &DestronoiNode::get_persistence);
 
     ClassDB::bind_method(D_METHOD("set_inner_material", "material"), &DestronoiNode::set_inner_material);
     ClassDB::bind_method(D_METHOD("get_inner_material"), &DestronoiNode::get_inner_material);
 	ADD_PROPERTY(
-        PropertyInfo(Variant::INT, "tree_height", PROPERTY_HINT_RANGE, "1,20,1"),
-        "set_tree_height",
-        "get_tree_height");
+        PropertyInfo(Variant::INT, "granularity", PROPERTY_HINT_RANGE, "1,9,1"),
+        "set_granularity",
+        "get_granularity");
     
     ADD_PROPERTY(
-        PropertyInfo(Variant::FLOAT, "visible_seconds", PROPERTY_HINT_RANGE, "-1.0,20.0,0.1"),
-        "set_visible_seconds",
-        "get_visible_seconds");
+        PropertyInfo(Variant::FLOAT, "persistence", PROPERTY_HINT_RANGE, "-1.0,20.0,0.1"),
+        "set_persistence",
+        "get_persistence");
 
     ADD_PROPERTY(
         PropertyInfo(Variant::OBJECT, "inner_material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
@@ -53,19 +55,19 @@ void DestronoiNode::_bind_methods() {
     );
 }
 
-void DestronoiNode::set_tree_height(int h) {
-	tree_height = h;
+void DestronoiNode::set_granularity(int h) {
+	granularity = h;
 }
 
-int DestronoiNode::get_tree_height() const {
-	return tree_height;
+int DestronoiNode::get_granularity() const {
+	return granularity;
 }
 
-void DestronoiNode::set_visible_seconds(float s) {
-    visible_seconds = s;
+void DestronoiNode::set_persistence(float s) {
+    persistence = s;
 }
-float DestronoiNode::get_visible_seconds() const {
-    return visible_seconds;
+float DestronoiNode::get_persistence() const {
+    return persistence;
 }
 
 void DestronoiNode::set_inner_material(const Ref<Material> &m) {
@@ -433,7 +435,7 @@ static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner)
     return true;
 }
 
-void DestronoiNode::generate() {
+void DestronoiNode::_ready() {
 	Node *parent = get_parent();
 	if (!parent) {
 		return;
@@ -469,7 +471,7 @@ void DestronoiNode::generate() {
 	_plot_sites_random(_root, rng);
 	_bisect(_root, outer_material, inner_material);
 
-	for (int i = 0; i < tree_height - 1; i++) {
+	for (int i = 0; i < granularity - 1; i++) {
 		std::vector<VSTNode *> leaves;
 		_root->get_leaf_nodes(leaves);
 
@@ -503,11 +505,14 @@ void DestronoiNode::_cleanup() {
 }
 
 
-void DestronoiNode::destroy(int left_val, int right_val, float combust_velocity) {
+void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
     Node3D *base_object = Object::cast_to<Node3D>(get_parent());
     if (!base_object || !_root) {
         return;
     }
+
+    int left_val = std::pow(2, granularity-1);
+    int right_val = left_val;
 
     // collect leaves to use
     std::vector<VSTNode *> vst_leaves;
@@ -551,7 +556,7 @@ void DestronoiNode::destroy(int left_val, int right_val, float combust_velocity)
         sum_mass += mass;
 
         // combustion outward velocity
-        if (combust_velocity != 0.0f) {
+        if (!Math::is_zero_approx(radial_velocity)) {
             std::vector<Vector3> endpoints;
             Vector3 estim_dir(0, 0, 0);
 
@@ -573,8 +578,10 @@ void DestronoiNode::destroy(int left_val, int right_val, float combust_velocity)
                 estim_dir /= (float)endpoints.size();
             }
 
-            estim_dir = estim_dir.normalized();
-            new_body->set_axis_velocity(estim_dir * combust_velocity);
+            estim_dir = estim_dir.normalized() * radial_velocity;
+            // estim_dir = estim_dir.lerp(linear_velocity.normalized(), 0.5f);
+            estim_dir += linear_velocity;
+            new_body->set_axis_velocity(estim_dir);
         }
 
         new_bodies.push_back(new_body);
@@ -601,8 +608,8 @@ void DestronoiNode::destroy(int left_val, int right_val, float combust_velocity)
     reparent(base_object->get_parent());
     base_object->queue_free();
 
-    if(visible_seconds > 0.0f) {
-        Ref<SceneTreeTimer> tm = get_tree()->create_timer(visible_seconds, true);
+    if(persistence > 0.0f) {
+        Ref<SceneTreeTimer> tm = get_tree()->create_timer(persistence, true);
         tm->connect("timeout", Callable(this, "_cleanup"));
     }
 }

@@ -1,3 +1,3 @@
 gde_test
 4.5
-GODOT_ENGINE_PATH_GOES_HERE
+/home/ad/00_apps/Godot_v4.5.1-stable_linux.x86_64

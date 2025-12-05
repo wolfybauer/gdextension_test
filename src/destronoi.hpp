@@ -1,5 +1,6 @@
 #pragma once
 
+#include "godot_cpp/variant/vector3.hpp"
 #include <vector>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
@@ -18,27 +19,27 @@ public:
     DestronoiNode() = default;
     ~DestronoiNode() override = default;
 
-    void set_tree_height(int h);
-    int get_tree_height() const;
+    void set_granularity(int h);
+    int get_granularity() const;
 
-    void set_visible_seconds(float s);
-    float get_visible_seconds() const;
+    void set_persistence(float s);
+    float get_persistence() const;
 
     void set_inner_material(const Ref<Material> &m);
     Ref<Material> get_inner_material() const;
 
-    void generate();                     // GDScript `_ready()` equivalent
-    void destroy(int left_val = 1,
-                 int right_val = 1,
-                 float combust_velocity = 0.0f);
+    void destroy(float radial_velocity = 5.0f,
+                Vector3 linear_velocity = Vector3());
     void _cleanup();
+
+    void _ready() override;
 
 protected:
     static void _bind_methods();
 
 private:
-    int tree_height = 5;                 // @export_range(1,8)
-    float visible_seconds = 1.0f;
+    int granularity = 5;                 // @export_range(1,8)
+    float persistence = 1.0f;
     VSTNode *_root = nullptr;            // root of the VST
     std::vector<RigidBody3D *> new_bodies;
     Ref<Material> inner_material;
