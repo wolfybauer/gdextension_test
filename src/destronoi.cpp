@@ -1,4 +1,6 @@
 #include "destronoi.hpp"
+#include "godot_cpp/core/defs.hpp"
+#include "godot_cpp/variant/vector3.hpp"
 #include "vst_node.hpp"
 
 #include <godot_cpp/classes/collision_shape3d.hpp>
@@ -10,13 +12,16 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <godot_cpp/classes/convex_polygon_shape3d.hpp>
-#include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scene_tree_timer.hpp>
 #include <godot_cpp/variant/callable.hpp>
 #include <godot_cpp/classes/random_number_generator.hpp>
 
 using namespace godot;
+
+
+
+// GODOT INTERFACE
 
 void DestronoiNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("generate"), &DestronoiNode::generate);
@@ -29,15 +34,23 @@ void DestronoiNode::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_visible_seconds", "s"), &DestronoiNode::set_visible_seconds);
 	ClassDB::bind_method(D_METHOD("get_visible_seconds"), &DestronoiNode::get_visible_seconds);
 
+    ClassDB::bind_method(D_METHOD("set_inner_material", "material"), &DestronoiNode::set_inner_material);
+    ClassDB::bind_method(D_METHOD("get_inner_material"), &DestronoiNode::get_inner_material);
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "tree_height", PROPERTY_HINT_RANGE, "1,20,1"),
-			"set_tree_height",
-			"get_tree_height");
+        PropertyInfo(Variant::INT, "tree_height", PROPERTY_HINT_RANGE, "1,20,1"),
+        "set_tree_height",
+        "get_tree_height");
     
     ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "visible_seconds", PROPERTY_HINT_RANGE, "-1.0,20.0,0.1"),
-			"set_visible_seconds",
-			"get_visible_seconds");
+        PropertyInfo(Variant::FLOAT, "visible_seconds", PROPERTY_HINT_RANGE, "-1.0,20.0,0.1"),
+        "set_visible_seconds",
+        "get_visible_seconds");
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::OBJECT, "inner_material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
+        "set_inner_material",
+        "get_inner_material"
+    );
 }
 
 void DestronoiNode::set_tree_height(int h) {
@@ -55,56 +68,69 @@ float DestronoiNode::get_visible_seconds() const {
     return visible_seconds;
 }
 
-void DestronoiNode::generate() {
-	Node *parent = get_parent();
-	if (!parent) {
-		return;
-    }
-
-    Ref<RandomNumberGenerator> rng;
-    if(rng.is_null()) {
-        rng.instantiate();
-        rng->randomize();
-    }
-
-	MeshInstance3D *mesh_instance = nullptr;
-
-	for (int i = 0; i < parent->get_child_count(); i++) {
-		Object *child = parent->get_child(i);
-		if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(child)) {
-			mesh_instance = mi;
-			break;
-		}
-	}
-
-	if (!mesh_instance) {
-		UtilityFunctions::print("[Destronoi] No MeshInstance3D sibling found");
-		return;
-	}
-
-	_root = memnew(VSTNode(mesh_instance));
-
-	plot_sites_random(_root, rng);
-	bisect(_root);
-
-	for (int i = 0; i < tree_height - 1; i++) {
-		std::vector<VSTNode *> leaves;
-		_root->get_leaf_nodes(leaves);
-
-		for (VSTNode *leaf : leaves) {
-			plot_sites_random(leaf, rng);
-			bisect(leaf);
-		}
-	}
+void DestronoiNode::set_inner_material(const Ref<Material> &m) {
+    inner_material = m;
 }
 
-void DestronoiNode::plot_sites(VSTNode *node, const Vector3 &s1, const Vector3 &s2) {
-	node->_sites.clear();
-	node->_sites.push_back(node->_mesh_instance->get_position() + s1);
-	node->_sites.push_back(node->_mesh_instance->get_position() + s2);
+Ref<Material> DestronoiNode::get_inner_material() const {
+    return inner_material;
 }
 
-void DestronoiNode::plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> rng) {
+
+// STATIC HELPERS
+
+typedef struct {
+    int a_id;
+    int b_id;
+    Vector3 p;
+} intersection_t;
+
+static void _emit_vertex(Ref<SurfaceTool> st, Ref<MeshDataTool> data, int vid) {
+    Vector3 pos = data->get_vertex(vid);
+    if(pos == Vector3(0,0,0)) {
+        return;
+    }
+
+    st->set_uv(data->get_vertex_uv(vid));
+    st->set_normal(data->get_vertex_normal(vid));
+    st->set_tangent(data->get_vertex_tangent(vid));
+    st->set_color(data->get_vertex_color(vid));
+    st->add_vertex(pos);
+}
+
+static void _emit_intersection(Ref<SurfaceTool> st, Ref<MeshDataTool> data, const intersection_t * n) {
+    Vector3 a = data->get_vertex(n->a_id);
+    Vector3 b = data->get_vertex(n->b_id);
+
+    float t = a.distance_to(n->p) / MAX(a.distance_to(b), 0.000001f);
+    
+    Vector2 uv = data->get_vertex_uv(n->a_id).lerp(data->get_vertex_uv(n->b_id), t);
+    
+    Vector3 nrm = data->get_vertex_normal(n->a_id).lerp(
+		data->get_vertex_normal(n->b_id), t
+	).normalized();
+
+    Color col = data->get_vertex_color(n->a_id).lerp(
+		data->get_vertex_color(n->b_id), t
+	);
+
+    Plane ta = data->get_vertex_tangent(n->a_id);
+    Plane tb = data->get_vertex_tangent(n->b_id);
+    Plane tan = Plane(
+		ta.normal.x + (tb.normal.x - ta.normal.x) * t,
+		ta.normal.y + (tb.normal.y - ta.normal.y) * t,
+		ta.normal.z + (tb.normal.z - ta.normal.z) * t,
+		ta.d + (tb.d - ta.d) * t
+	);
+
+    st->set_uv(uv);
+	st->set_normal(nrm);
+	st->set_tangent(tan);
+	st->set_color(col);
+	st->add_vertex(n->p);
+}
+
+static void _plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> rng) {
 	node->_sites.clear();
 
 	Ref<MeshDataTool> mdt;
@@ -119,7 +145,7 @@ void DestronoiNode::plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> 
 	float avg_y = 0.5f * (max_vec.y + min_vec.y);
 	float avg_z = 0.5f * (max_vec.z + min_vec.z);
 
-	float dev = 0.1f;
+	float dev = 0.1f; // put this on a noise texture?
 
 	while (node->_sites.size() < 2) {
 		Vector3 site(
@@ -151,18 +177,11 @@ void DestronoiNode::plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> 
 	}
 }
 
-bool DestronoiNode::bisect(VSTNode *vst_node) {
-    // Bisection aborted! Must have exactly 2 sites
+static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner) {
+    // _bisection aborted! Must have exactly 2 sites
     if (vst_node->get_site_count() != 2) {
         return false;
     }
-
-    // Colors for the new geometry
-    // These colors are assigned to new vertices and may be used for a simple
-    // distinction between interior and exterior faces. Example use in the debug.gdshader file.
-    Vector<Color> outer_colors;
-    outer_colors.push_back(Color(1, 1, 1)); // Color.WHITE
-    Color inner_color = Color(1, 0, 0);     // Color.RED
 
     // Create the plane
     // Equidistant from both sites; normal vector towards site B
@@ -176,19 +195,19 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
     Ref<MeshDataTool> data_tool;
     data_tool.instantiate();
     data_tool->create_from_surface(vst_node->_mesh_instance->get_mesh(), 0);
-
+    
     // Create SurfaceTool to construct the ABOVE mesh
     Ref<SurfaceTool> surface_tool_a;
     surface_tool_a.instantiate();
     surface_tool_a->begin(Mesh::PRIMITIVE_TRIANGLES);
-    surface_tool_a->set_material(vst_node->_mesh_instance->get_active_material(0));
+    surface_tool_a->set_material(outer);
     surface_tool_a->set_smooth_group(-1);
 
     // Create SurfaceTool to construct the BELOW mesh
     Ref<SurfaceTool> surface_tool_b;
     surface_tool_b.instantiate();
     surface_tool_b->begin(Mesh::PRIMITIVE_TRIANGLES);
-    surface_tool_b->set_material(vst_node->_mesh_instance->get_active_material(0));
+    surface_tool_b->set_material(outer);
     surface_tool_b->set_smooth_group(-1);
 
     // ---------------------------------------------------------
@@ -200,16 +219,15 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
         Ref<SurfaceTool> surface_tool;
         surface_tool.instantiate();
         surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
-        surface_tool->set_material(vst_node->_mesh_instance->get_active_material(0));
         surface_tool->set_smooth_group(-1);
 
         // invert normal for other side (i.e. treat below as above)
         if (side == 1) {
+            surface_tool->set_material(inner);
             plane.normal = -plane.normal;
             plane.d = -plane.d;
-            surface_tool->set_color(outer_colors[0]);
         } else {
-            surface_tool->set_color(outer_colors[0]);
+            surface_tool->set_material(outer);
         }
 
         Vector<Vector3> coplanar_vertices; // new vertices which intersect plane
@@ -221,7 +239,7 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
             face_vertices.resize(3);
 
             PackedInt32Array vertices_above_plane;
-            PackedVector3Array intersection_points;
+            Vector<intersection_t> intersection_points;
 
             // ITERATE OVER VERTICES AND DETERMINE "ABOVENESS"
             for (int vi = 0; vi < 3; vi++) {
@@ -241,7 +259,7 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
                 // pass through entire triangle
                 for (int vi = 0; vi < 3; vi++) {
                     int id = face_vertices[vi];
-                    surface_tool->add_vertex(data_tool->get_vertex(id));
+                    _emit_vertex(surface_tool, data_tool, id);
                 }
                 continue;
             }
@@ -250,14 +268,12 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
             // INTERSECTION CASE 1: ONE point above the plane
             // ---------------------------------------------------------
             if (vertices_above_plane.size() == 1) {
-                int a = vertices_above_plane[0];
-
                 int index_before = -1;
                 int index_after  = -1;
 
                 // find indices in winding order
                 for (int i = 0; i < 3; i++) {
-                    if (face_vertices[i] == a) {
+                    if (face_vertices[i] == vertices_above_plane[0]) {
                         index_after  = (i + 1) % 3;
                         index_before = (i + 2) % 3;
                         break;
@@ -266,26 +282,35 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
 
                 Vector3 i_after;
                 plane.intersects_segment(
-                    data_tool->get_vertex(a),
+                    data_tool->get_vertex(vertices_above_plane[0]),
                     data_tool->get_vertex(face_vertices[index_after]),
                     &i_after
                 );
-                intersection_points.push_back(i_after);
+                intersection_points.push_back((intersection_t) {
+                    .a_id = vertices_above_plane[0],
+                    .b_id = face_vertices[index_after],
+                    .p = i_after
+                });
                 coplanar_vertices.push_back(i_after);
 
                 Vector3 i_before;
                 plane.intersects_segment(
-                    data_tool->get_vertex(a),
+                    data_tool->get_vertex(vertices_above_plane[0]),
                     data_tool->get_vertex(face_vertices[index_before]),
                     &i_before
                 );
-                intersection_points.push_back(i_before);
+                intersection_points.push_back((intersection_t) {
+                    .a_id = vertices_above_plane[0],
+                    .b_id = face_vertices[index_before],
+                    .p = i_before
+                });
                 coplanar_vertices.push_back(i_before);
 
                 // TRIANGLE CREATION
-                surface_tool->add_vertex(data_tool->get_vertex(a));
-                surface_tool->add_vertex(intersection_points[0]);
-                surface_tool->add_vertex(intersection_points[1]);
+                _emit_vertex(surface_tool, data_tool, vertices_above_plane[0]);
+                _emit_intersection(surface_tool, data_tool, &intersection_points[0]);
+                _emit_intersection(surface_tool, data_tool, &intersection_points[1]);
+                
                 continue;
             }
 
@@ -293,64 +318,75 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
             // INTERSECTION CASE 2: TWO points above the plane
             // ---------------------------------------------------------
             if (vertices_above_plane.size() == 2) {
-                int va = vertices_above_plane[0];
-                int vb = vertices_above_plane[1];
 
                 // index of point below plane
                 int index_remaining = -1;
 
-                // match GDScript cyclic ordering logic exactly
-                if (va != face_vertices[1] && vb != face_vertices[1]) {
-                    // reverse order
-                    int tmp = va;
-                    va = vb;
-                    vb = tmp;
+                // match GDScript exactly
+                if (vertices_above_plane[0] != face_vertices[1] &&
+                    vertices_above_plane[1] != face_vertices[1]) {
+
+                    // reverse the actual array, not local vars
+                    int tmp = vertices_above_plane[0];
+                    vertices_above_plane[0] = vertices_above_plane[1];
+                    vertices_above_plane[1] = tmp;
+
                     index_remaining = 1;
                 }
-                else if (va != face_vertices[0] && vb != face_vertices[0]) {
+                else if (vertices_above_plane[0] != face_vertices[0] &&
+                        vertices_above_plane[1] != face_vertices[0]) {
+
                     index_remaining = 0;
                 }
                 else {
                     index_remaining = 2;
                 }
 
+
                 Vector3 i_after;
                 plane.intersects_segment(
-                    data_tool->get_vertex(vb),
+                    data_tool->get_vertex(vertices_above_plane[1]),
                     data_tool->get_vertex(face_vertices[index_remaining]),
                     &i_after
                 );
-                intersection_points.push_back(i_after);
+                intersection_points.push_back((intersection_t) {
+                    .a_id = vertices_above_plane[1],
+                    .b_id = face_vertices[index_remaining],
+                    .p = i_after
+                });
                 coplanar_vertices.push_back(i_after);
 
                 Vector3 i_before;
                 plane.intersects_segment(
-                    data_tool->get_vertex(va),
+                    data_tool->get_vertex(vertices_above_plane[0]),
                     data_tool->get_vertex(face_vertices[index_remaining]),
                     &i_before
                 );
-                intersection_points.push_back(i_before);
+                intersection_points.push_back((intersection_t) {
+                    .a_id = vertices_above_plane[0],
+                    .b_id = face_vertices[index_remaining],
+                    .p = i_before
+                });
                 coplanar_vertices.push_back(i_before);
 
                 // find shortest 'cross-length' to make 2 triangles from 4 points
                 int index_shortest = 0;
-                float dist_0 = data_tool->get_vertex(va).distance_to(intersection_points[0]);
-                float dist_1 = data_tool->get_vertex(vb).distance_to(intersection_points[1]);
+                float dist_0 = data_tool->get_vertex(vertices_above_plane[0]).distance_to(i_after);
+                float dist_1 = data_tool->get_vertex(vertices_above_plane[1]).distance_to(i_before);
                 if (dist_1 > dist_0) {
                     index_shortest = 1;
                 }
 
                 // TRIANGLE 1
-                surface_tool->add_vertex(data_tool->get_vertex(va));
-                surface_tool->add_vertex(data_tool->get_vertex(vb));
-                surface_tool->add_vertex(intersection_points[index_shortest]);
+                _emit_vertex(surface_tool, data_tool, vertices_above_plane[0]);
+				_emit_vertex(surface_tool, data_tool, vertices_above_plane[1]);
+                _emit_intersection(surface_tool, data_tool, &intersection_points[index_shortest]);
 
                 // TRIANGLE 2
-                surface_tool->add_vertex(intersection_points[0]);
-                surface_tool->add_vertex(intersection_points[1]);
-                surface_tool->add_vertex(data_tool->get_vertex(
-                    index_shortest == 0 ? va : vb
-                ));
+                _emit_intersection(surface_tool, data_tool, &intersection_points[0]);
+                _emit_intersection(surface_tool, data_tool, &intersection_points[1]);
+                _emit_vertex(surface_tool, data_tool, vertices_above_plane[index_shortest]);
+
 
                 continue;
             }
@@ -365,8 +401,6 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
         }
         centroid /= coplanar_vertices.size();
 
-        surface_tool->set_color(inner_color);
-
         for (int i = 0; i < coplanar_vertices.size() - 1; i++) {
             if (i % 2 != 0) continue;
             surface_tool->add_vertex(coplanar_vertices[i + 1]);
@@ -374,10 +408,11 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
             surface_tool->add_vertex(centroid);
         }
 
-        if (side == 0)
+        if (side == 0) {
             surface_tool_a = surface_tool;
-        else
+        } else {
             surface_tool_b = surface_tool;
+        }
     } // end side loop
 
     // finalize new meshes
@@ -396,6 +431,53 @@ bool DestronoiNode::bisect(VSTNode *vst_node) {
     vst_node->_right = memnew(VSTNode(mesh_instance_below, vst_node->_level + 1, Laterality::RIGHT));
 
     return true;
+}
+
+void DestronoiNode::generate() {
+	Node *parent = get_parent();
+	if (!parent) {
+		return;
+    }
+
+    Ref<RandomNumberGenerator> rng;
+    if(rng.is_null()) {
+        rng.instantiate();
+        rng->randomize();
+    }
+
+	MeshInstance3D *mesh_instance = nullptr;
+
+	for (int i = 0; i < parent->get_child_count(); i++) {
+		Object *child = parent->get_child(i);
+		if (MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(child)) {
+			mesh_instance = mi;
+			break;
+		}
+	}
+
+	if (!mesh_instance) {
+		UtilityFunctions::print("[Destronoi] No MeshInstance3D sibling found");
+		return;
+	}
+
+	_root = memnew(VSTNode(mesh_instance));
+    Ref<Material> outer_material = mesh_instance->get_active_material(0);
+    if(inner_material.is_null()) {
+        inner_material = outer_material;
+    }
+
+	_plot_sites_random(_root, rng);
+	_bisect(_root, outer_material, inner_material);
+
+	for (int i = 0; i < tree_height - 1; i++) {
+		std::vector<VSTNode *> leaves;
+		_root->get_leaf_nodes(leaves);
+
+		for (VSTNode *leaf : leaves) {
+			_plot_sites_random(leaf, rng);
+			_bisect(leaf, outer_material, inner_material);
+		}
+	}
 }
 
 void DestronoiNode::_cleanup() {

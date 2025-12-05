@@ -89,7 +89,6 @@ public:
     }
 
 
-private:
     MeshInstance3D *_mesh_instance = nullptr;
     std::vector<Vector3> _sites;
 

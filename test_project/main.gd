@@ -19,12 +19,12 @@ func _ready() -> void:
 func pop_boxes():
 	if not popped_once:
 		for n in get_children():
-			if 'Box' in n.name:
+			if n.visible and 'Box' in n.name:
 				var b = n.find_child('Destronoi*')
 				if b: b.destroy(5, 5, 6.0)
 		popped_once = true
 	else:
 		for n in get_children():
-			if 'Glass' in n.name:
+			if n.visible and 'Glass' in n.name:
 				var b = n.find_child('Destronoi*')
 				if b: b.destroy(5, 5, 6.0)

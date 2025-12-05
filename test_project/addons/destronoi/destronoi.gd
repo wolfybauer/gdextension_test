@@ -30,13 +30,14 @@ func _ready():
 	var parent = get_parent()
 	var mesh_instance = null
 	for child in parent.get_children():
-			if(child is MeshInstance3D):
-					mesh_instance = child
-					break
+		if(child is MeshInstance3D):
+			mesh_instance = child
+			break
 
 	if(mesh_instance == null):
-			print("[Destronoi] No MeshInstance3D sibling found")
-			return # no mesh; return early
+		print("[Destronoi] No MeshInstance3D sibling found")
+		return # no mesh; return early
+
 	_root = VSTNode.new(mesh_instance)
 
 	# Plot 2 sites for the subdivision
@@ -45,11 +46,11 @@ func _ready():
 	bisect(_root)
 	# Perform additional subdivisions depending on tree height
 	for i in range(tree_height - 1):
-			var leaves = []
-			_root.get_leaf_nodes(_root,leaves);
-			for leaf in range(leaves.size()):
-				plot_sites_random(leaves[leaf])
-				bisect(leaves[leaf])
+		var leaves = []
+		_root.get_leaf_nodes(_root,leaves);
+		for leaf in range(leaves.size()):
+			plot_sites_random(leaves[leaf])
+			bisect(leaves[leaf])
 
 func _emit_vertex(st, data, vid):
 	var pos = data.get_vertex(vid)
@@ -101,13 +102,6 @@ func _emit_intersection(st, data, a_id, b_id, p):
 
 
 
-
-## Assigns data to [method VSTNode._sites] of a specified [VSTNode].
-## [br][color=yellow]Note:[/color] Site coordinates are relative to the centre of [member VSTNode._mesh_instance].
-## [br][color=yellow]Note:[/color] Reusing this method will overwrite any existing sites.
-func plot_sites(vst_node: VSTNode, site1: Vector3, site2: Vector3):
-	vst_node._sites = [vst_node._mesh_instance.position + site1, vst_node._mesh_instance.position + site2]
-
 ## Randomly plots a pair of valid sites using rejection sampling. A site is
 ## considered valid if it falls within the volume of the [member VSTNode._mesh_instance].
 ## [br][color=yellow]Note:[/color] Site coordinates are relative to the centre of [member VSTNode._mesh_instance].
@@ -125,7 +119,6 @@ func plot_sites_random(vst_node: VSTNode):
 	var aabb : AABB = vst_node._mesh_instance.get_aabb()
 	var min_vec : Vector3 = aabb.position
 	var max_vec : Vector3 = aabb.end
-	aabb.get_center()
 
 	# Centers of each axis
 	var avg_x = (max_vec.x + min_vec.x)/2.0
@@ -160,7 +153,7 @@ func bisect(vst_node: VSTNode) -> bool:
 
 	# Bisection aborted! Must have exactly 2 sites
 	if vst_node.get_site_count() != 2 :
-			return false
+		return false
 
 	# Create the plane
 	# Equidistant from both sites; normal vector towards to site B
@@ -180,14 +173,12 @@ func bisect(vst_node: VSTNode) -> bool:
 	# Create SurfaceTool to construct the ABOVE mesh
 	var surface_tool_a := SurfaceTool.new()
 	surface_tool_a.begin(Mesh.PRIMITIVE_TRIANGLES)
-	#surface_tool_a.set_material(vst_node.get_override_material())
 	surface_tool_a.set_material(base_material)
 	surface_tool_a.set_smooth_group(-1)
 
 	# Create SurfaceTool to construct the BELOW mesh
 	var surface_tool_b := SurfaceTool.new()
 	surface_tool_b.begin(Mesh.PRIMITIVE_TRIANGLES)
-	#surface_tool_b.set_material(vst_node.get_override_material())
 	surface_tool_a.set_material(base_material)
 	surface_tool_b.set_smooth_group(-1)
 
@@ -264,7 +255,7 @@ func bisect(vst_node: VSTNode) -> bool:
 
 				coplanar_vertices.append(p_before)
 
-
+ 
 				# TRIANGLE CREATION
 				_emit_vertex(surface_tool, data_tool, vertices_above_plane[0])
 				
@@ -383,12 +374,10 @@ func bisect(vst_node: VSTNode) -> bool:
 	# Left is above, right is below; this decision was arbitrary
 	var mesh_instance_above := MeshInstance3D.new()
 	mesh_instance_above.mesh = surface_tool_a.commit()
-	mesh_instance_above.set_surface_override_material(0, base_material)
 	vst_node._left = VSTNode.new(mesh_instance_above, vst_node._level + 1, VSTNode.Laterality.LEFT)
 
 	var mesh_instance_below := MeshInstance3D.new()
 	mesh_instance_below.mesh = surface_tool_b.commit()
-	mesh_instance_below.set_surface_override_material(0, base_material)
 	vst_node._right = VSTNode.new(mesh_instance_below, vst_node._level + 1, VSTNode.Laterality.RIGHT)
 
 	return true
