@@ -27,9 +27,6 @@ _surfaces = [{
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0xm2m"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_272bh"]
-albedo_color = Color(0.8666667, 0.1882353, 0, 1)
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0xm2m"]
 albedo_color = Color(1, 0.58431375, 1, 1)
 
@@ -51,16 +48,19 @@ emission_enabled = true
 emission = Color(1, 1, 1, 1)
 emission_operator = 1
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_lquwl"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_7mycd"]
+size = Vector3(10, 3, 0.1)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_5vw27"]
 _surfaces = [{
-"aabb": AABB(-0.5, -0.5, -0.5, 1, 1, 1),
+"aabb": AABB(-5, -1.5, -0.05, 10, 3, 0.1),
 "attribute_data": PackedByteArray("AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/"),
 "format": 34359738391,
 "material": ExtResource("2_h2yge"),
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),
 "vertex_count": 36,
-"vertex_data": PackedByteArray("AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAL8AAAC/AAAAvwAAAL8AAAA/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAA/AAAAvwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAC/AAAAPwAAAL8AAAC/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8//3//////AAD/f/////8AAP9//////wAA/38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8/////f/9//n////9//3/+f////3//f/5//////wAA/z//////AAD/P/////8AAP8//3//////AAD/f/////8AAP9//////wAA////f/9//n////9//3/+f////3//f/5/")
+"vertex_data": PackedByteArray("AACgwAAAwL/NzEw9AACgwAAAwL/NzEy9AACgwAAAwD/NzEy9AACgQAAAwL/NzEy9AACgwAAAwL/NzEy9AACgwAAAwL/NzEw9AACgwAAAwD/NzEy9AACgwAAAwL/NzEy9AACgQAAAwL/NzEy9AACgwAAAwD/NzEy9AACgwAAAwD/NzEw9AACgwAAAwL/NzEw9AACgwAAAwL/NzEw9AACgwAAAwD/NzEw9AACgQAAAwD/NzEw9AACgQAAAwD/NzEw9AACgwAAAwD/NzEw9AACgwAAAwD/NzEy9AACgwAAAwL/NzEw9AACgQAAAwL/NzEw9AACgQAAAwL/NzEy9AACgQAAAwD/NzEw9AACgQAAAwL/NzEw9AACgwAAAwL/NzEw9AACgQAAAwL/NzEy9AACgQAAAwL/NzEw9AACgQAAAwD/NzEw9AACgQAAAwL/NzEy9AACgQAAAwD/NzEy9AACgwAAAwD/NzEy9AACgwAAAwD/NzEy9AACgQAAAwD/NzEy9AACgQAAAwD/NzEw9AACgQAAAwD/NzEw9AACgQAAAwD/NzEy9AACgQAAAwL/NzEy9AAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8//3//////AAD/f/////8AAP9//////wAA/38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8/////f/9//n////9//3/+f////3//f/5//////wAA/z//////AAD/P/////8AAP8//3//////AAD/f/////8AAP9//////wAA////f/9//n////9//3/+f////3//f/5/")
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h2yge"]
@@ -135,9 +135,179 @@ mesh = SubResource("ArrayMesh_272bh")
 shape = SubResource("BoxShape3D_0xm2m")
 
 [node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture"]
-inner_material = SubResource("StandardMaterial3D_272bh")
+persistence = 10.0
 
 [node name="NameLabel" type="Label3D" parent="BoxCPP_texture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture2" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -2.714961)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture2"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture2"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture2"]
+persistence = 11.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture3" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6640415, 0.5, -2.714961)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture3"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture3"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture3"]
+persistence = 12.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture4" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26220107, 0.5, -2.714961)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture4"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture4"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture4"]
+persistence = 9.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture5" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2116725, 0.5, -2.714961)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture5"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture5"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture5"]
+persistence = 10.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture6" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6816254, 0.5, -2.714961)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture6"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture6"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture6"]
+persistence = 2.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture7" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, 2.3131695)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture7"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture7"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture7"]
+persistence = 2.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture8" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6640415, 0.5, 2.3131695)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture8"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture8"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture8"]
+persistence = 2.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture9" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26220107, 0.5, 2.3131695)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture9"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture9"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture9"]
+persistence = 2.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture10" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2116725, 0.5, 2.3131695)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture10"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture10"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture10"]
+persistence = 2.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("3_lquwl")
+
+[node name="BoxCPP_texture11" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6816254, 0.5, 2.3131695)
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture11"]
+mesh = SubResource("ArrayMesh_272bh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture11"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture11"]
+persistence = 2.0
+inner_material = SubResource("StandardMaterial3D_lquwl")
+
+[node name="NameLabel" type="Label3D" parent="BoxCPP_texture11"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("3_lquwl")
 
@@ -151,7 +321,6 @@ mesh = SubResource("ArrayMesh_ig7tw")
 shape = SubResource("BoxShape3D_0xm2m")
 
 [node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_color"]
-granularity = 9
 persistence = -1.0
 inner_material = SubResource("StandardMaterial3D_kek77")
 
@@ -160,21 +329,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("3_lquwl")
 
 [node name="GlassCPP" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.952927, 0.5, 1.6038694)
-
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="GlassCPP"]
-mesh = SubResource("ArrayMesh_lquwl")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.952927, 0.5, 0.40640163)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GlassCPP"]
-shape = SubResource("BoxShape3D_0xm2m")
+shape = SubResource("BoxShape3D_7mycd")
 
 [node name="DestronoiNode" type="DestronoiNode" parent="GlassCPP"]
+granularity = 9
+persistence = -1.0
 inner_material = ExtResource("2_h2yge")
 
 [node name="NameLabel" type="Label3D" parent="GlassCPP"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("3_lquwl")
 metadata/_custom_type_script = "uid://dn43dxgvybmo5"
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="GlassCPP"]
+mesh = SubResource("ArrayMesh_5vw27")
 
 [node name="BoxGD_color" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 0)

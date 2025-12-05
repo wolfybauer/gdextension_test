@@ -15,7 +15,7 @@ func pop_some(filter:String):
 		var b = n.find_child('Destronoi*')
 		if not b: continue
 		if b is DestronoiNode:
-			b.destroy(5.0, Vector3(5,0,0))
+			b.destroy(5.0, Vector3(randf_range(-10,10),randf_range(-10,10),randf_range(-10,10)))
 		else:
 			(b as DestronoiGD).destroy(5,5,6.0)
 func pop_boxes():
