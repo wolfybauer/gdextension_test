@@ -1,8 +1,16 @@
 #include "destronoi.hpp"
+#include "godot_cpp/variant/string_name.hpp"
+#include "godot_cpp/variant/typed_array.hpp"
+#include "vst_node.hpp"
+
+#include <cstdlib>
+#include <godot_cpp/classes/engine.hpp>
+#include "godot_cpp/classes/array_mesh.hpp"
+#include "godot_cpp/classes/mesh_instance3d.hpp"
 #include "godot_cpp/core/defs.hpp"
 #include "godot_cpp/core/math.hpp"
+#include "godot_cpp/core/memory.hpp"
 #include "godot_cpp/variant/vector3.hpp"
-#include "vst_node.hpp"
 
 #include <cmath>
 #include <godot_cpp/classes/collision_shape3d.hpp>
@@ -56,7 +64,7 @@ void DestronoiNode::_bind_methods() {
 }
 
 void DestronoiNode::set_granularity(int h) {
-	granularity = h;
+	granularity = h < 2 ? 2 : h;
 }
 
 int DestronoiNode::get_granularity() const {
@@ -132,14 +140,13 @@ static void _emit_intersection(Ref<SurfaceTool> st, Ref<MeshDataTool> data, cons
 	st->add_vertex(n->p);
 }
 
-static void _plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> rng) {
+static void _plot_sites_random(Ref<MeshDataTool> mdt, VSTNode * node, Ref<RandomNumberGenerator> rng) {
 	node->_sites.clear();
 
-	Ref<MeshDataTool> mdt;
-    mdt.instantiate();
-	mdt->create_from_surface(node->_mesh_instance->get_mesh(), 0);
+    mdt->clear();
+	mdt->create_from_surface(node->_mesh_ref, 0);
 
-	AABB aabb = node->_mesh_instance->get_aabb();
+	AABB aabb = node->_mesh_ref->get_aabb();
 	Vector3 min_vec = aabb.position;
 	Vector3 max_vec = aabb.get_end();
 
@@ -179,7 +186,8 @@ static void _plot_sites_random(VSTNode *node, Ref<RandomNumberGenerator> rng) {
 	}
 }
 
-static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner) {
+bool DestronoiNode::_bisect(Ref<SurfaceTool> sta, Ref<SurfaceTool> stb,
+        Ref<MeshDataTool> data_tool, VSTNode * vst_node) {
     // _bisection aborted! Must have exactly 2 sites
     if (vst_node->get_site_count() != 2) {
         return false;
@@ -194,23 +202,23 @@ static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner)
     Plane plane(plane_normal, plane_position);
 
     // Create MeshDataTool to parse mesh data of current VSTNode
-    Ref<MeshDataTool> data_tool;
-    data_tool.instantiate();
-    data_tool->create_from_surface(vst_node->_mesh_instance->get_mesh(), 0);
+    data_tool->clear();
+    data_tool->create_from_surface(vst_node->_mesh_ref, 0);
     
     // Create SurfaceTool to construct the ABOVE mesh
-    Ref<SurfaceTool> surface_tool_a;
-    surface_tool_a.instantiate();
-    surface_tool_a->begin(Mesh::PRIMITIVE_TRIANGLES);
-    surface_tool_a->set_material(outer);
-    surface_tool_a->set_smooth_group(-1);
+    sta->clear();
+    sta->begin(Mesh::PRIMITIVE_TRIANGLES);
+    sta->set_material(vst_node->_mat_ref);
+    sta->set_smooth_group(-1);
 
     // Create SurfaceTool to construct the BELOW mesh
-    Ref<SurfaceTool> surface_tool_b;
-    surface_tool_b.instantiate();
-    surface_tool_b->begin(Mesh::PRIMITIVE_TRIANGLES);
-    surface_tool_b->set_material(outer);
-    surface_tool_b->set_smooth_group(-1);
+    stb->clear();
+    stb->begin(Mesh::PRIMITIVE_TRIANGLES);
+    stb->set_material(vst_node->_mat_ref);
+    stb->set_smooth_group(-1);
+
+    Ref<SurfaceTool> tools[2] = {sta, stb};
+    // UtilityFunctions::print("[Destronoi] _bisect : about to gen submeshes");
 
     // ---------------------------------------------------------
     // GENERATE SUB-MESHES: for each face, and for each side (above/below)
@@ -218,23 +226,23 @@ static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner)
     for (int side = 0; side < 2; side++) {
 
         // Intermediate surface tool
-        Ref<SurfaceTool> surface_tool;
-        surface_tool.instantiate();
-        surface_tool->begin(Mesh::PRIMITIVE_TRIANGLES);
-        surface_tool->set_smooth_group(-1);
+        Ref<SurfaceTool> surface_tool = tools[side];
 
         // invert normal for other side (i.e. treat below as above)
         if (side == 1) {
-            surface_tool->set_material(inner);
+            if(!inner_material.is_null()) {
+                surface_tool->set_material(inner_material->duplicate());
+            }
             plane.normal = -plane.normal;
             plane.d = -plane.d;
         } else {
-            surface_tool->set_material(outer);
+            // surface_tool->set_material(outer);
         }
 
         Vector<Vector3> coplanar_vertices; // new vertices which intersect plane
 
         // ITERATE OVER EACH FACE OF BASE MESH
+        // UtilityFunctions::print("[Destronoi] _bisect : about to iterate over faces");
         for (int face = 0; face < data_tool->get_face_count(); face++) {
 
             PackedInt32Array face_vertices;
@@ -393,10 +401,12 @@ static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner)
                 continue;
             }
         } // end face loop
+        
 
         // ---------------------------------------------------------
         // DEFINE NEW FACE; FIND CENTROID; APPEND TRIANGLES
         // ---------------------------------------------------------
+        // UtilityFunctions::print("[Destronoi] _bisect : about to find centroid");
         Vector3 centroid(0,0,0);
         for (int i = 0; i < coplanar_vertices.size(); i++) {
             centroid += coplanar_vertices[i];
@@ -409,33 +419,47 @@ static bool _bisect(VSTNode *vst_node, Ref<Material> outer, Ref<Material> inner)
             surface_tool->add_vertex(coplanar_vertices[i]);
             surface_tool->add_vertex(centroid);
         }
-
-        if (side == 0) {
-            surface_tool_a = surface_tool;
-        } else {
-            surface_tool_b = surface_tool;
-        }
     } // end side loop
 
     // finalize new meshes
-    surface_tool_a->index();
-    surface_tool_a->generate_normals();
-    surface_tool_b->index();
-    surface_tool_b->generate_normals();
+    sta->index();
+    sta->generate_normals();
+    stb->index();
+    stb->generate_normals();
 
-    // assign to child VSTNodes
-    MeshInstance3D *mesh_instance_above = memnew(MeshInstance3D);
-    mesh_instance_above->set_mesh(surface_tool_a->commit());
-    vst_node->_left = memnew(VSTNode(mesh_instance_above, vst_node->_level + 1, Laterality::LEFT));
+    // UtilityFunctions::print("[Destronoi] _bisect : allocating _left and _right");
+    Ref<Mesh> left_mesh = sta->commit();
+    if (left_mesh.is_valid()) {
+        vst_node->_left = memnew(VSTNode(
+            left_mesh,
+            _root->_mat_ref,
+            vst_node->_level + 1,
+            Laterality::LEFT
+        ));
+    }
 
-    MeshInstance3D *mesh_instance_below = memnew(MeshInstance3D);
-    mesh_instance_below->set_mesh(surface_tool_b->commit());
-    vst_node->_right = memnew(VSTNode(mesh_instance_below, vst_node->_level + 1, Laterality::RIGHT));
+    Ref<Mesh> right_mesh = stb->commit();
+    if (right_mesh.is_valid()) {
+        vst_node->_right = memnew(VSTNode(
+            right_mesh,
+            _root->_mat_ref,
+            vst_node->_level + 1,
+            Laterality::RIGHT
+        ));
+    }
+
+
+    // UtilityFunctions::print("[Destronoi] _bisect : allocated ok");
 
     return true;
 }
 
 void DestronoiNode::_ready() {
+
+    if(Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+
 	Node *parent = get_parent();
 	if (!parent) {
 		return;
@@ -462,45 +486,78 @@ void DestronoiNode::_ready() {
 		return;
 	}
 
-	_root = memnew(VSTNode(mesh_instance));
-    Ref<Material> outer_material = mesh_instance->get_active_material(0);
-    if(inner_material.is_null()) {
-        inner_material = outer_material;
-    }
+    // Ref<Material> outer_material = mesh_instance->get_active_material(0);
+    // if(inner_material.is_null()) {
+    //     inner_material = outer_material;
+    // }
 
-	_plot_sites_random(_root, rng);
-	_bisect(_root, outer_material, inner_material);
+    // UtilityFunctions::print("[Destronoi] allocating root");
+    _root = memnew(VSTNode(mesh_instance->get_mesh(),
+                        mesh_instance->get_active_material(0)));
+
+    Ref<MeshDataTool> mdt;
+    mdt.instantiate();
+    Ref<SurfaceTool> sta;
+    sta.instantiate();
+    Ref<SurfaceTool> stb;
+    stb.instantiate();
+
+    // UtilityFunctions::print("[Destronoi] about to bisect");
+
+
+	_plot_sites_random(mdt, _root, rng);
+    // UtilityFunctions::print("[Destronoi] first plot ok");
+	// _bisect(sta, stb, mdt, _root, outer_material, inner_material);
+	_bisect(sta, stb, mdt, _root);
+    // UtilityFunctions::print("[Destronoi] first bisect ok");
 
 	for (int i = 0; i < granularity - 1; i++) {
 		std::vector<VSTNode *> leaves;
 		_root->get_leaf_nodes(leaves);
 
-		for (VSTNode *leaf : leaves) {
-			_plot_sites_random(leaf, rng);
-			_bisect(leaf, outer_material, inner_material);
+		for (VSTNode * leaf : leaves) {
+			_plot_sites_random(mdt, leaf, rng);
+			// _bisect(sta, stb, mdt, leaf, outer_material, inner_material);
+			_bisect(sta, stb, mdt, leaf);
 		}
 	}
+    // UtilityFunctions::print("[Destronoi] bisect done");
+
 }
+
+
 
 void DestronoiNode::_cleanup() {
 
-    for (RigidBody3D *body : new_bodies) {
-        MeshInstance3D *mi = cast_to<MeshInstance3D>(body->get_child(0));
-        if (mi && mi->get_mesh().is_valid()) {
-            mi->set_mesh(Ref<Mesh>());   // releases RID
-        } else {
-    		UtilityFunctions::print("[Destronoi] no mesh found to free");
-        }
+    // for (RigidBody3D *body : new_bodies) {
+    //     MeshInstance3D *mi = cast_to<MeshInstance3D>(body->get_child(0));
+    //     if (mi && mi->get_mesh().is_valid()) {
+    //         // mi->set_mesh(Ref<Mesh>());   // releases RID
+    //         mi->queue_free();
+    //     } else {
+    // 		UtilityFunctions::print("[Destronoi] no mesh found to free");
+    //     }
 
-        CollisionShape3D *col = cast_to<CollisionShape3D>(body->get_child(1));
-        if (col && col->get_shape().is_valid()) {
-            col->set_shape(Ref<Shape3D>());  // releases RID
-        } else {
-    		UtilityFunctions::print("[Destronoi] no collision shape found to free");
-        }
+    //     CollisionShape3D *col = cast_to<CollisionShape3D>(body->get_child(1));
+    //     if (col && col->get_shape().is_valid()) {
+    //         // col->set_shape(Ref<Shape3D>());  // releases RID
+    //         col->queue_free();
+    //     } else {
+    // 		UtilityFunctions::print("[Destronoi] no collision shape found to free");
+    //     }
 
-        body->queue_free();
-    }
+    //     UtilityFunctions::print("FREE body ", body->get_name(), " in tree:", body->is_inside_tree());
+    //     body->queue_free();
+    // }
+
+    // // _root->free_tree();
+    // // _root->_mesh_ref.unref();
+    // // memdelete(_root);
+    // // _root = nullptr;
+
+    // clear_mesh_refs(_root);
+
+    // new_bodies.clear();
     queue_free();
 }
 
@@ -511,41 +568,73 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
         return;
     }
 
-    int left_val = std::pow(2, granularity-1);
-    int right_val = left_val;
+    int depth = std::pow(2, granularity-1);
 
     // collect leaves to use
     std::vector<VSTNode *> vst_leaves;
-    _root->get_left_leaf_nodes(vst_leaves, left_val);
-    _root->get_right_leaf_nodes(vst_leaves, right_val);
+    _root->get_left_leaf_nodes(vst_leaves, depth);
+    _root->get_right_leaf_nodes(vst_leaves, depth);
 
     float sum_mass = 0.0f;
 
     Transform3D base_xform = base_object->get_global_transform();
 
+    // scale masses
+    float base_mass = 1.0f;
+    if (Object::cast_to<RigidBody3D>(base_object)) {
+        base_mass = Object::cast_to<RigidBody3D>(base_object)->get_mass();
+    }
+
+    // new_bodies =  memnew_arr(RigidBody3D, vst_leaves.size());
+    // new_meshes = memnew_arr(MeshInstance3D, vst_leaves.size());
+    // new_cols = memnew_arr(CollisionShape3D, vst_leaves.size());
+
+    std::vector<RigidBody3D *> new_bodies;
+    std::vector<MeshInstance3D *> new_meshes;
+    std::vector<CollisionShape3D *> new_cols;
+
+    new_bodies.reserve(vst_leaves.size());
+    new_meshes.reserve(vst_leaves.size());
+    new_cols.reserve(vst_leaves.size());
+
+    TypedArray<StringName> pgroups = base_object->get_groups();
+
     for (size_t idx = 0; idx < vst_leaves.size(); idx++) {
-        VSTNode *leaf = vst_leaves[idx];
+        VSTNode * leaf = vst_leaves[idx];
+
+        RigidBody3D *new_body = memnew(RigidBody3D);
+        MeshInstance3D *new_mesh_instance = memnew(MeshInstance3D);
+        CollisionShape3D *col = memnew(CollisionShape3D);
+
+        new_bodies.push_back(new_body);
+        new_meshes.push_back(new_mesh_instance);
+        new_cols.push_back(col);
 
         // new rigidbody
-        RigidBody3D *new_body = memnew(RigidBody3D);
+        // RigidBody3D *new_body = &new_bodies[idx];
         new_body->set_name("VFragment_" + String::num_int64(idx));
 
         // position = base_object.transform.origin
         // new_body->set_global_position(base_xform.origin);
 
         // bring the mesh instance over
-        MeshInstance3D *new_mesh_instance = leaf->_mesh_instance;
+        // MeshInstance3D *new_mesh_instance = &new_meshes[idx];
+        new_mesh_instance->set_mesh(leaf->_mesh_ref);
+        // Ref<ArrayMesh> am = leaf->_mesh_ref;
+        // if (am.is_valid() && am->get_surface_count() > 0) {
+        //     am->surface_set_material(0, leaf->_mat_ref);
+        // }
         new_mesh_instance->set_name("MeshInstance3D");
         new_body->add_child(new_mesh_instance);
 
         // collision
-        CollisionShape3D *col = memnew(CollisionShape3D);
+        // CollisionShape3D *col = &new_cols[idx];
         col->set_name("CollisionShape3D");
-        col->set_shape(new_mesh_instance->get_mesh()->create_convex_shape(false, false));
+        col->set_shape(leaf->_mesh_ref->create_convex_shape(false, false));
         new_body->add_child(col);
 
         // velocity dir = AABB center - base position   (NOTE: this is *local*, matches gdscript bug-for-bug)
-        AABB aabb = new_mesh_instance->get_mesh()->get_aabb();
+        AABB aabb = leaf->_mesh_ref->get_aabb();
         Vector3 velocity_dir = aabb.get_center() - base_xform.origin;
         velocity_dir = velocity_dir.normalized();
 
@@ -556,61 +645,56 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
         sum_mass += mass;
 
         // combustion outward velocity
-        if (!Math::is_zero_approx(radial_velocity)) {
-            std::vector<Vector3> endpoints;
-            Vector3 estim_dir(0, 0, 0);
+        Vector<Vector3> endpoints;
+        Vector3 estim_dir(0, 0, 0);
 
-            for (int i = 0; i < 8; i++) {
-                Vector3 ep = new_mesh_instance->get_mesh()->get_aabb().get_endpoint(i);
-                ep = ep.normalized();
+        for (int i = 0; i < 8; i++) {
+            Vector3 ep = leaf->_mesh_ref->get_aabb().get_endpoint(i);
+            ep = ep.normalized();
 
-                float d = ep.dot(base_xform.origin.normalized());
-                if (Math::abs(d) > 0.0f) {
-                    endpoints.push_back(ep);
-                }
+            float d = ep.dot(base_xform.origin.normalized());
+            if (Math::abs(d) > 0.0f) {
+                endpoints.push_back(ep);
             }
-
-            for (const Vector3 &ep : endpoints) {
-                estim_dir += ep;
-            }
-
-            if (!endpoints.empty()) {
-                estim_dir /= (float)endpoints.size();
-            }
-
-            estim_dir = estim_dir.normalized() * radial_velocity;
-            // estim_dir = estim_dir.lerp(linear_velocity.normalized(), 0.5f);
-            estim_dir += linear_velocity;
-            new_body->set_axis_velocity(estim_dir);
         }
 
-        new_bodies.push_back(new_body);
+        for (const Vector3 &ep : endpoints) {
+            estim_dir += ep;
+        }
+
+        if (!endpoints.is_empty()) {
+            estim_dir /= (float)endpoints.size();
+        }
+
+        estim_dir = estim_dir.normalized() * radial_velocity;
+        // estim_dir = estim_dir.lerp(linear_velocity.normalized(), 0.5f);
+        estim_dir += linear_velocity;
+        new_body->set_axis_velocity(estim_dir);
+
+        float scaled = new_body->get_mass() * (base_mass / sum_mass);
+        new_body->set_mass(scaled);
+        new_body->set_collision_layer(0);
+        // base_object->get_parent()->add_child(new_body);
+        add_child(new_body);
+        new_body->set_global_position(base_xform.origin);
+        for(StringName g : pgroups) {
+            new_body->add_to_group(g);
+        }
+        // UtilityFunctions::print("CREATE new_body ", new_body->get_name(), " in tree:", new_body->is_inside_tree());
     }
 
-    // scale masses
-    float base_mass = 1.0f;
-    if (Object::cast_to<RigidBody3D>(base_object)) {
-        base_mass = Object::cast_to<RigidBody3D>(base_object)->get_mass();
-    }
-
-    for (RigidBody3D *body : new_bodies) {
-        float scaled = body->get_mass() * (base_mass / sum_mass);
-        body->set_mass(scaled);
-        base_object->get_parent()->add_child(body);
-        body->set_global_position(base_xform.origin);
-    }
-
-    // delete vst tree, original rigidbody
-    _root->free_tree();
-    memdelete(_root);
-    _root = nullptr;
 
     reparent(base_object->get_parent());
     base_object->queue_free();
 
-    if(persistence > 0.0f) {
-        Ref<SceneTreeTimer> tm = get_tree()->create_timer(persistence, true);
-        tm->connect("timeout", Callable(this, "_cleanup"));
+    // delete vst tree, original rigidbody
+    _root->free_tree();
+    memdelete(_root);
+
+    if(!(persistence > 0.0f)) {
+        return;
     }
+    Ref<SceneTreeTimer> tm = get_tree()->create_timer(persistence, true);
+    tm->connect("timeout", Callable(this, "_cleanup"));
 }
 

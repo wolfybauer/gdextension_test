@@ -87,7 +87,7 @@
     "dont_touch.txt":true,
     "LICENSE":true,
     "README.md":true,
-    "SConstruct":true,
+    // "SConstruct":true,
     ".gitignore":true,
     ".github":true,
     "godot-cpp":true,

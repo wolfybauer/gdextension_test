@@ -1,8 +1,9 @@
 #pragma once
 
-#include "destronoi.hpp"
-#include <godot_cpp/classes/mesh_instance3d.hpp>
-#include <godot_cpp/variant/packed_vector3_array.hpp>
+#include "godot_cpp/classes/material.hpp"
+#include "godot_cpp/core/memory.hpp"
+#include <godot_cpp/classes/ref.hpp>
+#include <godot_cpp/classes/mesh.hpp>
 #include <vector>
 
 namespace godot {
@@ -20,14 +21,22 @@ class VSTNode {
 public:
     VSTNode() = default;
 
-    VSTNode(MeshInstance3D *mesh_instance,
-            int level = 0,
-            Laterality lat = Laterality::NONE)
-        : _mesh_instance(mesh_instance),
-          _level(level),
-          _laterality(lat) {}
+    VSTNode(Ref<Mesh> mesh_ref,
+        Ref<Material> mat_ref,
+        int level = 0,
+        Laterality lat = Laterality::NONE) :
+        _level(level),
+        _laterality(lat)
+    {
+        if (mesh_ref.is_valid()) {
+            _mesh_ref = mesh_ref->duplicate();
+        }
 
-    MeshInstance3D *get_mesh() const { return _mesh_instance; }
+        if (mat_ref.is_valid()) {
+            _mat_ref = mat_ref->duplicate();
+        }
+    }
+
 
     int get_site_count() const { return _sites.size(); }
 
@@ -62,34 +71,25 @@ public:
             _right->get_left_leaf_nodes(out, lim, level + 1);
     }
 
-    // PackedVector3Array get_sites_gd() const {
-    //     PackedVector3Array arr;
-    //     arr.resize(_sites.size());
-    //     for (size_t i = 0; i < _sites.size(); ++i)
-    //         arr[i] = _sites[i];
-    //     return arr;
-    // }
     void free_tree() {
+        _mesh_ref.unref();
+        _mat_ref.unref();
+        
         // delete children first
         if (_left) {
             _left->free_tree();
             memdelete(_left);
-            _left = nullptr;
         }
 
         if (_right) {
             _right->free_tree();
             memdelete(_right);
-            _right = nullptr;
         }
-
-        // DO NOT free _mesh_instance here.
-        // Godot owns it through the scene tree.
-        // When the Destronoi node is queue_free()'d, Godot frees them.
     }
 
 
-    MeshInstance3D *_mesh_instance = nullptr;
+    Ref<Mesh> _mesh_ref;
+    Ref<Material> _mat_ref;
     std::vector<Vector3> _sites;
 
     VSTNode *_left  = nullptr;

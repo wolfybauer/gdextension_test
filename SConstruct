@@ -80,6 +80,29 @@ Run the following command to download godot-cpp:
 # Include godot-cpp SConstruct, passing all command-line arguments
 env = SConscript("godot-cpp/SConstruct", {"env": env, "customs": customs})
 
+env.Append(CCFLAGS=[
+    "-Werror",
+    "-Wall",
+    # "-Wextra",
+    # "-Wpedantic",
+    # "-Wshadow",
+    # "-Wundef",
+    # "-Wconversion",
+    # "-Wdouble-promotion",
+    # "-Wimplicit-fallthrough",
+    # "-Wmissing-declarations",
+    # "-Wmissing-include-dirs",
+    # "-Wnull-dereference",
+])
+
+# env.Append(CXXFLAGS=[
+#     "-Wold-style-cast",
+#     "-Wuseless-cast",
+#     "-Wnon-virtual-dtor",
+#     "-Woverloaded-virtual",
+#     "-Wzero-as-null-pointer-constant",
+# ])
+
 # Process GDExtension-specific options
 source_dirs = env['source_dirs'].split(',')   # Convert comma-separated string to list
 source_exts = env['source_exts'].split(',')   # Convert comma-separated string to list

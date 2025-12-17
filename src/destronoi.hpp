@@ -1,7 +1,10 @@
 #pragma once
 
+#include "godot_cpp/classes/mesh_data_tool.hpp"
+#include "godot_cpp/classes/surface_tool.hpp"
+#include "vst_node.hpp"
+#include <godot_cpp/classes/ref.hpp>
 #include "godot_cpp/variant/vector3.hpp"
-#include <vector>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/material.hpp>
@@ -9,8 +12,8 @@
 
 namespace godot {
 
-class VSTNode;
 class RigidBody3D;
+class CollisionShape3D;
 
 class DestronoiNode : public Node {
     GDCLASS(DestronoiNode, Node);
@@ -38,10 +41,14 @@ protected:
     static void _bind_methods();
 
 private:
+    bool _bisect(Ref<SurfaceTool> sta, Ref<SurfaceTool> stb,
+        Ref<MeshDataTool> data_tool, VSTNode * vst_node);
     int granularity = 5;                 // @export_range(1,8)
     float persistence = 1.0f;
-    VSTNode *_root = nullptr;            // root of the VST
-    std::vector<RigidBody3D *> new_bodies;
+    VSTNode * _root;            // root of the VST
+    RigidBody3D * new_bodies;
+    MeshInstance3D * new_meshes;
+    CollisionShape3D * new_cols;
     Ref<Material> inner_material;
 };
 
