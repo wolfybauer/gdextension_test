@@ -28,6 +28,9 @@ public:
     void set_persistence(float s);
     float get_persistence() const;
 
+    void set_tangible_shards(bool s);
+    bool get_tangible_shards() const;
+
     void set_inner_material(const Ref<Material> &m);
     Ref<Material> get_inner_material() const;
 
@@ -45,6 +48,7 @@ private:
         Ref<MeshDataTool> data_tool, VSTNode * vst_node);
     int granularity = 5;                 // @export_range(1,8)
     float persistence = 1.0f;
+    bool tangible_shards = false;
     VSTNode * _root;            // root of the VST
     RigidBody3D * new_bodies;
     MeshInstance3D * new_meshes;

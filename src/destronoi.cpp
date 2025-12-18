@@ -44,6 +44,9 @@ void DestronoiNode::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_persistence", "s"), &DestronoiNode::set_persistence);
 	ClassDB::bind_method(D_METHOD("get_persistence"), &DestronoiNode::get_persistence);
 
+    ClassDB::bind_method(D_METHOD("set_tangible_shards", "s"), &DestronoiNode::set_tangible_shards);
+	ClassDB::bind_method(D_METHOD("get_tangible_shards"), &DestronoiNode::get_tangible_shards);
+
     ClassDB::bind_method(D_METHOD("set_inner_material", "material"), &DestronoiNode::set_inner_material);
     ClassDB::bind_method(D_METHOD("get_inner_material"), &DestronoiNode::get_inner_material);
 	ADD_PROPERTY(
@@ -55,6 +58,12 @@ void DestronoiNode::_bind_methods() {
         PropertyInfo(Variant::FLOAT, "persistence", PROPERTY_HINT_RANGE, "-1.0,20.0,0.1"),
         "set_persistence",
         "get_persistence");
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::BOOL, "tangible_shards", PROPERTY_HINT_RESOURCE_TYPE, "bool"),
+        "set_tangible_shards",
+        "get_tangible_shards"
+    );
 
     ADD_PROPERTY(
         PropertyInfo(Variant::OBJECT, "inner_material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
@@ -76,6 +85,13 @@ void DestronoiNode::set_persistence(float s) {
 }
 float DestronoiNode::get_persistence() const {
     return persistence;
+}
+
+void DestronoiNode::set_tangible_shards(bool s) {
+    tangible_shards = s;
+}
+bool DestronoiNode::get_tangible_shards() const {
+    return tangible_shards;
 }
 
 void DestronoiNode::set_inner_material(const Ref<Material> &m) {
@@ -563,7 +579,7 @@ void DestronoiNode::_cleanup() {
 
 
 void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
-    Node3D *base_object = Object::cast_to<Node3D>(get_parent());
+    PhysicsBody3D *base_object = Object::cast_to<PhysicsBody3D>(get_parent());
     if (!base_object || !_root) {
         return;
     }
@@ -673,7 +689,13 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
 
         float scaled = new_body->get_mass() * (base_mass / sum_mass);
         new_body->set_mass(scaled);
-        new_body->set_collision_layer(0);
+        new_body->set_collision_mask(base_object->get_collision_mask());
+
+        if(tangible_shards) {
+            new_body->set_collision_layer(base_object->get_collision_layer());
+        } else {
+            new_body->set_collision_layer(0);
+        }
         // base_object->get_parent()->add_child(new_body);
         add_child(new_body);
         new_body->set_global_position(base_xform.origin);

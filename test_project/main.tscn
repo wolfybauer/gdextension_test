@@ -69,6 +69,8 @@ mesh = SubResource("ArrayMesh_272bh")
 shape = SubResource("BoxShape3D_0xm2m")
 
 [node name="DestronoiNode" type="DestronoiNode" parent="BoxCPP_texture"]
+persistence = 5.0
+tangible_shards = true
 inner_material = SubResource("StandardMaterial3D_kek77")
 
 [node name="NameLabel" type="Label3D" parent="BoxCPP_texture"]
