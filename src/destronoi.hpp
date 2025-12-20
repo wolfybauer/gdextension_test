@@ -50,9 +50,6 @@ private:
     float persistence = 1.0f;
     bool tangible_shards = false;
     VSTNode * _root;            // root of the VST
-    RigidBody3D * new_bodies;
-    MeshInstance3D * new_meshes;
-    CollisionShape3D * new_cols;
     Ref<Material> inner_material;
 };
 

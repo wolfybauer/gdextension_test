@@ -1,5 +1,10 @@
 #include "destronoi.hpp"
+#include "godot_cpp/classes/physics_server3d.hpp"
+#include "godot_cpp/classes/rendering_server.hpp"
+#include "godot_cpp/classes/world3d.hpp"
+#include "godot_cpp/variant/basis.hpp"
 #include "godot_cpp/variant/string_name.hpp"
+#include "godot_cpp/variant/transform3d.hpp"
 #include "godot_cpp/variant/typed_array.hpp"
 #include "vst_node.hpp"
 
@@ -545,37 +550,29 @@ void DestronoiNode::_ready() {
 
 void DestronoiNode::_cleanup() {
 
-    // for (RigidBody3D *body : new_bodies) {
-    //     MeshInstance3D *mi = cast_to<MeshInstance3D>(body->get_child(0));
-    //     if (mi && mi->get_mesh().is_valid()) {
-    //         // mi->set_mesh(Ref<Mesh>());   // releases RID
-    //         mi->queue_free();
-    //     } else {
-    // 		UtilityFunctions::print("[Destronoi] no mesh found to free");
-    //     }
 
-    //     CollisionShape3D *col = cast_to<CollisionShape3D>(body->get_child(1));
-    //     if (col && col->get_shape().is_valid()) {
-    //         // col->set_shape(Ref<Shape3D>());  // releases RID
-    //         col->queue_free();
-    //     } else {
-    // 		UtilityFunctions::print("[Destronoi] no collision shape found to free");
-    //     }
-
-    //     UtilityFunctions::print("FREE body ", body->get_name(), " in tree:", body->is_inside_tree());
-    //     body->queue_free();
+    // // /////////////  Rendering/Physics server direct attempt ///////////////////
+    // PhysicsServer3D * ps = PhysicsServer3D::get_singleton();
+    // RenderingServer * rs = RenderingServer::get_singleton();
+    // for(size_t i=0; i<_body_rids.size(); i++) {
+    //     ps->free_rid(_body_rids[i]);
+    //     rs->free_rid(_mesh_rids[i]);
     // }
+    // _body_rids.clear();
+    // _mesh_rids.clear();
+    // // /////////////
 
-    // // _root->free_tree();
-    // // _root->_mesh_ref.unref();
-    // // memdelete(_root);
-    // // _root = nullptr;
 
-    // clear_mesh_refs(_root);
-
-    // new_bodies.clear();
     queue_free();
 }
+
+// void DestronoiNode::_exit_tree() {
+//     _cleanup();
+// }
+
+// DestronoiNode::~DestronoiNode() {
+//     _cleanup();
+// }
 
 
 void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
@@ -600,11 +597,7 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
     if (Object::cast_to<RigidBody3D>(base_object)) {
         base_mass = Object::cast_to<RigidBody3D>(base_object)->get_mass();
     }
-
-    // new_bodies =  memnew_arr(RigidBody3D, vst_leaves.size());
-    // new_meshes = memnew_arr(MeshInstance3D, vst_leaves.size());
-    // new_cols = memnew_arr(CollisionShape3D, vst_leaves.size());
-
+    
     std::vector<RigidBody3D *> new_bodies;
     std::vector<MeshInstance3D *> new_meshes;
     std::vector<CollisionShape3D *> new_cols;
@@ -627,27 +620,38 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
         new_cols.push_back(col);
 
         // new rigidbody
-        // RigidBody3D *new_body = &new_bodies[idx];
         new_body->set_name("VFragment_" + String::num_int64(idx));
 
-        // position = base_object.transform.origin
-        // new_body->set_global_position(base_xform.origin);
-
-        // bring the mesh instance over
-        // MeshInstance3D *new_mesh_instance = &new_meshes[idx];
+        // bring the mesh over
         new_mesh_instance->set_mesh(leaf->_mesh_ref);
-        // Ref<ArrayMesh> am = leaf->_mesh_ref;
-        // if (am.is_valid() && am->get_surface_count() > 0) {
-        //     am->surface_set_material(0, leaf->_mat_ref);
-        // }
         new_mesh_instance->set_name("MeshInstance3D");
         new_body->add_child(new_mesh_instance);
 
         // collision
-        // CollisionShape3D *col = &new_cols[idx];
         col->set_name("CollisionShape3D");
         col->set_shape(leaf->_mesh_ref->create_convex_shape(false, false));
         new_body->add_child(col);
+
+        // // /////////////  Rendering/Physics server direct attempt ///////////////////
+        // PhysicsServer3D * ps = PhysicsServer3D::get_singleton();
+        // RID body_rid = ps->body_create();
+        // Ref<ConvexPolygonShape3D> sh = leaf->_mesh_ref->create_convex_shape(true, true);
+        // ps->body_set_space(body_rid, base_object->get_world_3d()->get_space());
+        // RID sh_rid = sh->get_rid();
+        // UtilityFunctions::prints("rid:",sh_rid);
+        // ps->body_add_shape(body_rid, sh_rid);
+        // ps->body_set_shape_transform(body_rid, 0, Transform3D());
+        // ps->body_set_state(body_rid, PhysicsServer3D::BODY_STATE_TRANSFORM, base_xform);
+        // _body_rids.push_back(body_rid);
+
+        // UtilityFunctions::prints("shape count:", ps->body_get_shape_count(body_rid));
+
+        // RenderingServer * rs = RenderingServer::get_singleton();
+        // RID mesh_rid = rs->instance_create2(leaf->_mesh_ref->get_rid(), base_object->get_world_3d()->get_scenario());
+        // rs->instance_set_transform(mesh_rid, base_xform);
+        // _mesh_rids.push_back(mesh_rid);
+        // // /////////////
+
 
         // velocity dir = AABB center - base position   (NOTE: this is *local*, matches gdscript bug-for-bug)
         AABB aabb = leaf->_mesh_ref->get_aabb();
@@ -696,7 +700,6 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
         } else {
             new_body->set_collision_layer(0);
         }
-        // base_object->get_parent()->add_child(new_body);
         add_child(new_body);
         new_body->set_global_position(base_xform.origin);
         for(StringName g : pgroups) {

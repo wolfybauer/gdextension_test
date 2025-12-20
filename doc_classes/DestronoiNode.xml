@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="DestronoiNode" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-	Destructable component
+		Destructable component
 	</brief_description>
 	<description>
-	Must be child of a PhysicsBody3D. Tree height sets granularity.
+		Must be child of a PhysicsBody3D. Tree height sets granularity.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -14,16 +14,18 @@
 			<param index="0" name="radial_velocity" type="float" default="5.0" />
 			<param index="1" name="linear_velocity" type="Vector3" default="Vector3(0, 0, 0)" />
 			<description>
-			Blow the thing up
+				Blow the thing up
 			</description>
 		</method>
 	</methods>
 	<members>
+		<member name="granularity" type="int" setter="set_granularity" getter="get_granularity" default="5">
+		</member>
 		<member name="inner_material" type="Material" setter="set_inner_material" getter="get_inner_material">
 		</member>
-		<member name="tree_height" type="int" setter="set_tree_height" getter="get_tree_height" default="5">
+		<member name="persistence" type="float" setter="set_persistence" getter="get_persistence" default="1.0">
 		</member>
-		<member name="visible_seconds" type="float" setter="set_visible_seconds" getter="get_visible_seconds" default="1.0">
+		<member name="tangible_shards" type="bool" setter="set_tangible_shards" getter="get_tangible_shards" default="false">
 		</member>
 	</members>
 </class>
