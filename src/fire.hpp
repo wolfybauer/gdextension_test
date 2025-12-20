@@ -36,7 +36,7 @@ struct Vector3iEq {
 };
 
 typedef struct {
-    int hitpoints;
+    float hitpoints;
     bool burning;
     float cooldown;
     float time_left;
@@ -57,6 +57,9 @@ public:
     void set_torch(bool t);
     bool get_torch() const;
 
+    void set_max_hp(int h);
+    int get_max_hp() const;
+
     void set_resolution(Vector3i t);
     Vector3i get_resolution() const;
 
@@ -72,6 +75,8 @@ private:
     float spread_margin = 0.7f;
     float spread_interval = 0.5f;
     Vector3i grid_resolution = Vector3i(3, 3, 3);
+    int max_hitpoints = 45;
+    int _last_max_hp = 45;
     
     std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> _grid;
     AABB _collision_aabb;
@@ -86,6 +91,7 @@ private:
     void _extinguish_cell(Vector3i cell);
     
     void _build_grid();
+    void _intra_spread(double delta);
 };
 
 }

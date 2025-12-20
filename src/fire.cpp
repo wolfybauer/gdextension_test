@@ -219,8 +219,73 @@ void FireComponent3D::_extinguish_cell(Vector3i cell) {
 
 }
 
-void FireComponent3D::_build_grid() {
+static bool _is_on_boundary(std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> grid, Vector3i pos) {
+    for(Vector3 offset : SURROUNDING) {
+        // key not exist, so IS on boundary
+        if (grid.find(pos+offset) == grid.end()) {
+            return true;
+        }
+    }
+    return false;
 }
+
+void FireComponent3D::_build_grid() {
+    _grid.clear();
+    for(int x=0; x<grid_resolution.x; x++) {
+        for(int y=0; y<grid_resolution.y; y++) {
+            for(int z=0; z<grid_resolution.z; z++) {
+                Vector3i coord = Vector3i(x,y,z);
+                Vector3 world_pos = _collision_aabb.position + Vector3(x,y,z) * _cell_size + _cell_size / 2.0f;
+                if(!_is_inside_object(world_pos)) {
+                    continue;
+                }
+
+                // TODO setup debug visuals
+
+                _grid[coord] = {
+                    .hitpoints = (is_torch) ? -1.0f : (float)max_hitpoints,
+                    .burning = false,
+                    .cooldown = 0.0,
+                    .time_left = 0.0,
+                    .local_pos = to_local(world_pos),
+                    .emitter = nullptr
+                };
+            }
+        }
+    }
+
+    // prune interior cells
+    for (auto it = _grid.begin(); it != _grid.end(); ) {
+        if (!_is_on_boundary(_grid, it->first)) {
+            it = _grid.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+}
+
+void FireComponent3D::_intra_spread(double delta) {
+    for (auto it = _grid.begin(); it != _grid.end(); ) {
+        Vector3i pos = it->first;
+        fire_cell_t data = it->second;
+
+        if(!data.burning) {
+            continue;
+        }
+
+        // spread to neighboring cells
+        for(Vector3 offset : SURROUNDING) {
+            // key not exist, skip
+            if (_grid.find(pos+offset) == _grid.end()) {
+                continue;
+            }
+
+            // jgkjgkgkhgkjgkjghhhgdgfdg
+        }
+    }
+}
+
 
 void FireComponent3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_torch", "t"), &FireComponent3D::set_torch);
@@ -228,6 +293,9 @@ void FireComponent3D::_bind_methods() {
 
     ClassDB::bind_method(D_METHOD("set_resolution", "r"), &FireComponent3D::set_resolution);
 	ClassDB::bind_method(D_METHOD("get_resolution"), &FireComponent3D::get_resolution);
+
+    ClassDB::bind_method(D_METHOD("set_max_hp", "r"), &FireComponent3D::set_max_hp);
+	ClassDB::bind_method(D_METHOD("get_max_hp"), &FireComponent3D::get_max_hp);
 
     ADD_PROPERTY(
         PropertyInfo(Variant::BOOL, "torch", PROPERTY_HINT_RESOURCE_TYPE, "bool"),
@@ -240,13 +308,32 @@ void FireComponent3D::_bind_methods() {
         "set_resolution",
         "get_resolution"
     );
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::INT, "max_hp"),
+        "set_max_hp",
+        "get_max_hp"
+    );
 }
 
 void FireComponent3D::set_torch(bool t) {
+    if(t) {
+        _last_max_hp = max_hitpoints;
+        max_hitpoints = -1;
+    } else {
+        max_hitpoints = _last_max_hp;
+    }
     is_torch = t;
 }
 bool FireComponent3D::get_torch() const {
     return is_torch;
+}
+
+void FireComponent3D::set_max_hp(int h) {
+    max_hitpoints = h;
+}
+int FireComponent3D::get_max_hp() const {
+    return max_hitpoints;
 }
 
 void FireComponent3D::set_resolution(Vector3i r) {
@@ -286,9 +373,12 @@ void FireComponent3D::_ready() {
         _build_convex_planes(_col_inst, _convex_planes);
     }
 
+    _build_grid();
+
     UtilityFunctions::prints("[Enflame]", parent->get_name(), "_is_convex=", _is_convex);
     UtilityFunctions::prints("[Enflame]", parent->get_name(), "_collision_aabb=", _collision_aabb);
     UtilityFunctions::prints("[Enflame]", parent->get_name(), "_cell_size=", _cell_size);
+    UtilityFunctions::prints("[Enflame]", parent->get_name(), "_grid.size()=", _grid.size());
 
 }
 

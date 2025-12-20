@@ -7,6 +7,8 @@
 	<tutorials>
 	</tutorials>
 	<members>
+		<member name="resolution" type="Vector3i" setter="set_resolution" getter="get_resolution" default="Vector3i(3, 3, 3)">
+		</member>
 		<member name="torch" type="bool" setter="set_torch" getter="get_torch" default="false">
 		</member>
 	</members>
