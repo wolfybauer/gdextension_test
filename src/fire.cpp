@@ -142,7 +142,7 @@ bool FireComponent3D::_is_inside_object(Vector3 world_pos) {
         return true;
     }
 
-    Vector3 loc = _col_inst->get_global_transform().affine_inverse().get_origin() * world_pos;
+    Vector3 loc = _col_inst->get_global_transform().affine_inverse().xform(world_pos);
     for(Plane plane : _convex_planes) {
         if(plane.distance_to(loc) > 0.001f) {
             return false;
@@ -234,7 +234,7 @@ static bool _is_on_boundary(std::unordered_map<Vector3i, fire_cell_t, Vector3iHa
 
 void FireComponent3D::_clear_grid() {
     for (auto it = _grid.begin(); it != _grid.end(); ) {
-        fire_cell_t cell = it->second;
+        fire_cell_t & cell = it->second;
         if(cell.dbg_mesh_rid.is_valid()) {
             RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
         }
@@ -244,6 +244,13 @@ void FireComponent3D::_clear_grid() {
 
 
 void FireComponent3D::_build_grid() {
+    if(!is_inside_tree()) {
+        return;
+    }
+
+    // reset cell size every rebuild
+    _cell_size = _collision_aabb.get_size() / grid_resolution;
+
     // preclean grid
     _clear_grid();
 
@@ -261,7 +268,7 @@ void FireComponent3D::_build_grid() {
         for(int y=0; y<grid_resolution.y; y++) {
             for(int z=0; z<grid_resolution.z; z++) {
                 Vector3i coord = Vector3i(x,y,z);
-                Vector3 world_pos = _collision_aabb.position + Vector3(x,y,z) * _cell_size + _cell_size / 2.0f;
+                Vector3 world_pos = _collision_aabb.position + Vector3(x,y,z) * _cell_size + _cell_size * 0.5f;
                 if(!_is_inside_object(world_pos)) {
                     continue;
                 }
@@ -273,7 +280,8 @@ void FireComponent3D::_build_grid() {
                     .burning = false,
                     .cooldown = 0.0,
                     .time_left = 0.0,
-                    .local_pos = to_local(world_pos),
+                    // .local_pos = to_local(world_pos),
+                    .local_pos = world_pos,
                     .emitter = nullptr
                 };
                 if(_grid[coord].dbg_mat_ref.is_null()) {
@@ -288,7 +296,7 @@ void FireComponent3D::_build_grid() {
                 if(!_grid[coord].dbg_mesh_rid.is_valid()) {
                     _grid[coord].dbg_mesh_rid = RenderingServer::get_singleton()->instance_create2(_grid[coord].dbg_mesh_ref->get_rid(), get_world_3d()->get_scenario());
                     RenderingServer::get_singleton()->instance_geometry_set_cast_shadows_setting(_grid[coord].dbg_mesh_rid, RenderingServer::SHADOW_CASTING_SETTING_OFF);
-                    RenderingServer::get_singleton()->instance_set_transform(_grid[coord].dbg_mesh_rid, Transform3D(Basis(), to_global(_grid[coord].local_pos)) * get_global_transform());
+                    RenderingServer::get_singleton()->instance_set_transform(_grid[coord].dbg_mesh_rid, Transform3D(Basis(), _grid[coord].local_pos) * get_global_transform());
                 }
             }
         }
@@ -297,7 +305,7 @@ void FireComponent3D::_build_grid() {
     // prune interior cells
     for (auto it = _grid.begin(); it != _grid.end(); ) {
         if (!_is_on_boundary(_grid, it->first)) {
-            fire_cell_t cell = it->second;
+            fire_cell_t & cell = it->second;
             if(cell.dbg_mesh_rid.is_valid()) {
                 RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
             }
@@ -306,7 +314,6 @@ void FireComponent3D::_build_grid() {
             ++it;
         }
     }
-
 }
 
 void FireComponent3D::_intra_spread(double delta) {
@@ -389,13 +396,13 @@ Vector3i FireComponent3D::get_resolution() const {
 }
 
 void FireComponent3D::_on_ready() {
-    Node *parent = get_parent();
-	if (!parent) {
+    _parent = get_parent_node_3d();
+	if (!_parent) {
 		return;
     }
 
     // find the CollisionShape3D
-    for(Object * child : parent->get_children()) {
+    for(Object * child : _parent->get_children()) {
 		if (CollisionShape3D *col = Object::cast_to<CollisionShape3D>(child)) {
 			_col_inst = col;
 			break;
@@ -415,7 +422,6 @@ void FireComponent3D::_on_ready() {
 
     // get bunrable object's aabb (and determine if convex), get cell size(radius in physical space)
     _collision_aabb = _get_shape_aabb(_col_inst, &_is_convex);
-    _cell_size = _collision_aabb.get_size() / grid_resolution;
     
     // get planes for is_inside checking
     if(_is_convex) {
@@ -423,15 +429,12 @@ void FireComponent3D::_on_ready() {
     }
 
     _build_grid();
+    set_notify_transform(true);
 
-    UtilityFunctions::prints("[Enflame]", parent->get_name(), "_is_convex=", _is_convex);
-    UtilityFunctions::prints("[Enflame]", parent->get_name(), "_collision_aabb=", _collision_aabb);
-    UtilityFunctions::prints("[Enflame]", parent->get_name(), "_cell_size=", _cell_size);
-    UtilityFunctions::prints("[Enflame]", parent->get_name(), "_grid.size()=", _grid.size());
-
-}
-
-void FireComponent3D::_on_xform_changed() {
+    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_is_convex=", _is_convex);
+    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_collision_aabb=", _collision_aabb);
+    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_cell_size=", _cell_size);
+    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_grid.size()=", _grid.size());
 
 }
 
@@ -439,19 +442,32 @@ void FireComponent3D::_process(double p_delta) {
 
 }
 
+void FireComponent3D::_on_xform_changed() {
+    for (auto it = _grid.begin(); it != _grid.end(); it++) {
+        fire_cell_t & cell = it->second;
+        if(!cell.dbg_mesh_rid.is_valid()) {
+            continue;
+        }
+        RenderingServer::get_singleton()->instance_set_transform(cell.dbg_mesh_rid, Transform3D(Basis(), cell.local_pos) * get_global_transform());
+    }
+}
+
 void FireComponent3D::_notification(int p_what) {
     // UtilityFunctions::prints("[Enflame]", "_notification=", p_what);
     switch (p_what) {
 		case NOTIFICATION_READY: {
             _on_ready();
-        } break;
+            break;
+        }
 
         case NOTIFICATION_PREDELETE: {
             _clear_grid();
+            break;
         }
 
         case NOTIFICATION_TRANSFORM_CHANGED: {
             _on_xform_changed();
+            break;
         }
 
         default:

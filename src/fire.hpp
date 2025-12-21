@@ -83,6 +83,8 @@ private:
     Vector3i grid_resolution = Vector3i(3, 3, 3);
     int max_hitpoints = 45;
     int _last_max_hp = 45;
+
+    Node3D * _parent = nullptr;
     
     std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> _grid;
     AABB _collision_aabb;
