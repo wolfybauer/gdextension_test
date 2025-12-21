@@ -1,12 +1,15 @@
 #include "fire.hpp"
 #include "godot_cpp/classes/array_mesh.hpp"
+#include "godot_cpp/classes/base_material3d.hpp"
 #include "godot_cpp/classes/box_shape3d.hpp"
+#include "godot_cpp/classes/rendering_server.hpp"
 #include "godot_cpp/classes/sphere_shape3d.hpp"
 #include "godot_cpp/classes/capsule_shape3d.hpp"
 #include "godot_cpp/classes/collision_shape3d.hpp"
 #include "godot_cpp/classes/convex_polygon_shape3d.hpp"
 #include "godot_cpp/classes/object.hpp"
 #include "godot_cpp/classes/shape3d.hpp"
+#include "godot_cpp/classes/world3d.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/variant/aabb.hpp"
 #include "godot_cpp/variant/packed_vector3_array.hpp"
@@ -229,8 +232,31 @@ static bool _is_on_boundary(std::unordered_map<Vector3i, fire_cell_t, Vector3iHa
     return false;
 }
 
+void FireComponent3D::_clear_grid() {
+    for (auto it = _grid.begin(); it != _grid.end(); ) {
+        fire_cell_t cell = it->second;
+        if(cell.dbg_mesh_rid.is_valid()) {
+            RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
+        }
+        it = _grid.erase(it);
+    }
+}
+
+
 void FireComponent3D::_build_grid() {
-    _grid.clear();
+    // preclean grid
+    _clear_grid();
+
+    // make debug sphere
+    if(_dbg_sphere.is_null()) {
+        _dbg_sphere.instantiate();
+    }
+
+    // determine size every (re)build of grid
+    _dbg_sphere->set_radius(_cell_size.length() * 0.2f);
+    _dbg_sphere->set_height(_dbg_sphere->get_radius()*2.0f);
+
+    // built it
     for(int x=0; x<grid_resolution.x; x++) {
         for(int y=0; y<grid_resolution.y; y++) {
             for(int z=0; z<grid_resolution.z; z++) {
@@ -250,6 +276,20 @@ void FireComponent3D::_build_grid() {
                     .local_pos = to_local(world_pos),
                     .emitter = nullptr
                 };
+                if(_grid[coord].dbg_mat_ref.is_null()) {
+                    _grid[coord].dbg_mat_ref.instantiate();
+                }
+
+                if(_grid[coord].dbg_mesh_ref.is_null()) {
+                    _grid[coord].dbg_mesh_ref = _dbg_sphere->duplicate();
+                    _grid[coord].dbg_mesh_ref->set_material(_grid[coord].dbg_mat_ref);
+                }
+
+                if(!_grid[coord].dbg_mesh_rid.is_valid()) {
+                    _grid[coord].dbg_mesh_rid = RenderingServer::get_singleton()->instance_create2(_grid[coord].dbg_mesh_ref->get_rid(), get_world_3d()->get_scenario());
+                    RenderingServer::get_singleton()->instance_geometry_set_cast_shadows_setting(_grid[coord].dbg_mesh_rid, RenderingServer::SHADOW_CASTING_SETTING_OFF);
+                    RenderingServer::get_singleton()->instance_set_transform(_grid[coord].dbg_mesh_rid, Transform3D(Basis(), to_global(_grid[coord].local_pos)) * get_global_transform());
+                }
             }
         }
     }
@@ -257,6 +297,10 @@ void FireComponent3D::_build_grid() {
     // prune interior cells
     for (auto it = _grid.begin(); it != _grid.end(); ) {
         if (!_is_on_boundary(_grid, it->first)) {
+            fire_cell_t cell = it->second;
+            if(cell.dbg_mesh_rid.is_valid()) {
+                RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
+            }
             it = _grid.erase(it);
         } else {
             ++it;
@@ -338,37 +382,42 @@ int FireComponent3D::get_max_hp() const {
 
 void FireComponent3D::set_resolution(Vector3i r) {
     grid_resolution = r;
+    _build_grid();
 }
 Vector3i FireComponent3D::get_resolution() const {
     return grid_resolution;
 }
 
-void FireComponent3D::_ready() {
+void FireComponent3D::_on_ready() {
     Node *parent = get_parent();
 	if (!parent) {
 		return;
     }
 
+    // find the CollisionShape3D
     for(Object * child : parent->get_children()) {
 		if (CollisionShape3D *col = Object::cast_to<CollisionShape3D>(child)) {
 			_col_inst = col;
 			break;
 		}
 	}
-
     if(!_col_inst) {
         UtilityFunctions::print("[Enflame] No CollisionShape3D sibling found");
 		return;
     }
 
+    // make sure it has a shape
     Ref<Shape3D> shape = _col_inst->get_shape();
-    if(shape.is_null()) {
+    if(!shape.is_valid()) {
         UtilityFunctions::print("[Enflame] CollisionShape3D has no shape");
 		return;
     }
 
+    // get bunrable object's aabb (and determine if convex), get cell size(radius in physical space)
     _collision_aabb = _get_shape_aabb(_col_inst, &_is_convex);
     _cell_size = _collision_aabb.get_size() / grid_resolution;
+    
+    // get planes for is_inside checking
     if(_is_convex) {
         _build_convex_planes(_col_inst, _convex_planes);
     }
@@ -382,6 +431,30 @@ void FireComponent3D::_ready() {
 
 }
 
+void FireComponent3D::_on_xform_changed() {
+
+}
+
 void FireComponent3D::_process(double p_delta) {
 
+}
+
+void FireComponent3D::_notification(int p_what) {
+    // UtilityFunctions::prints("[Enflame]", "_notification=", p_what);
+    switch (p_what) {
+		case NOTIFICATION_READY: {
+            _on_ready();
+        } break;
+
+        case NOTIFICATION_PREDELETE: {
+            _clear_grid();
+        }
+
+        case NOTIFICATION_TRANSFORM_CHANGED: {
+            _on_xform_changed();
+        }
+
+        default:
+            break;
+    }
 }

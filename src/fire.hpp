@@ -1,6 +1,9 @@
 #pragma once
 
 #include "godot_cpp/classes/collision_shape3d.hpp"
+#include "godot_cpp/classes/sphere_mesh.hpp"
+#include "godot_cpp/classes/sphere_shape3d.hpp"
+#include "godot_cpp/classes/standard_material3d.hpp"
 #include "godot_cpp/variant/plane.hpp"
 #include "godot_cpp/variant/vector3.hpp"
 #include "godot_cpp/variant/vector3i.hpp"
@@ -42,6 +45,9 @@ typedef struct {
     float time_left;
     Vector3 local_pos;
     Node3D * emitter;
+    RID dbg_mesh_rid;
+    Ref<StandardMaterial3D> dbg_mat_ref;
+    Ref<SphereMesh> dbg_mesh_ref;
 } fire_cell_t;
 
 class FireComponent3D : public Node3D {
@@ -51,8 +57,8 @@ public:
     FireComponent3D() = default;
     ~FireComponent3D() override = default;
 
-    void _ready() override;
     void _process(double p_delta) override;
+    void _notification(int p_what);
 
     void set_torch(bool t);
     bool get_torch() const;
@@ -84,13 +90,18 @@ private:
     bool _is_convex = false;
     CollisionShape3D * _col_inst;
     std::vector<Plane> _convex_planes;
+    Ref<SphereMesh> _dbg_sphere;
 
     bool _is_inside_object(Vector3 world_pos);
     fire_cell_t * _get_closest_cell(Vector3 world_pos, Vector3i * cell);
     void _ignite_cell(Vector3i cell);
     void _extinguish_cell(Vector3i cell);
     
+    void _on_ready();
+    void _on_xform_changed();
+
     void _build_grid();
+    void _clear_grid();
     void _intra_spread(double delta);
 };
 
