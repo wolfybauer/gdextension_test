@@ -42,7 +42,7 @@ transform = Transform3D(0.9909832, -0.1339862, 0, 0.083773874, 0.61960495, 0.780
 shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.84562534, 0.5337768, 0, -0.5337768, 0.84562534, 0, 3.8163517, 8.5196495)
+transform = Transform3D(0.8660254, -0.26717612, 0.4226309, 0, 0.8452618, 0.53435224, -0.5, -0.46276262, 0.7320182, 5, 4, 5)
 
 [node name="Floor" type="CSGBox3D" parent="."]
 use_collision = true
@@ -50,9 +50,10 @@ size = Vector3(20, 0, 20)
 material = SubResource("StandardMaterial3D_hbvx4")
 
 [node name="BoxCPP_texture" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9341006, 0)
+transform = Transform3D(0.69216835, -0.7217361, 0, 0.7217361, 0.69216835, 0, 0, 0, 1, 4.2578845, 2.9341006, 0.6816013)
 
 [node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture"]
+visible = false
 mesh = SubResource("ArrayMesh_3ylfg")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture"]
@@ -65,7 +66,7 @@ script = ExtResource("3_gnr80")
 [node name="FireComponent3D" type="FireComponent3D" parent="BoxCPP_texture"]
 
 [node name="FakeConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9341006, 2.3392098)
+transform = Transform3D(1, 0, 0, 0, 0.702327, 0.71185446, 0, -0.71185446, 0.702327, 0, 2.9341006, 2.3392098)
 
 [node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="FakeConvex"]
 mesh = SubResource("ArrayMesh_3ylfg")
@@ -80,7 +81,7 @@ script = ExtResource("3_gnr80")
 [node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex"]
 
 [node name="RealConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.869124, -0.49459428, 0, 0.49459428, 0.869124, 1.638458, 7.800422, -4.278052)
+transform = Transform3D(1, 0, 0, 0, -0.054810733, -0.9984967, 0, 0.9984967, -0.054810733, 1.638458, 7.800422, -4.278052)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="RealConvex"]
 mesh = SubResource("CylinderMesh_gnr80")
@@ -90,3 +91,4 @@ skeleton = NodePath("../..")
 shape = SubResource("ConvexPolygonShape3D_p2wxh")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="RealConvex"]
+visible_debug = true
