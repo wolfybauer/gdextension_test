@@ -17,6 +17,7 @@
 #include "godot_cpp/variant/transform3d.hpp"
 #include "godot_cpp/variant/vector3.hpp"
 #include "godot_cpp/variant/vector3i.hpp"
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -33,17 +34,64 @@ const Vector3i SURROUNDING[6] = {
     Vector3i(0, 0, -1),
 };
 
+// optimize for case when convex polygon is actually just a box
+static bool _convex_is_box(const Ref<ConvexPolygonShape3D> &cvx, Vector3 &out_size) {
+    PackedVector3Array pts = cvx->get_points();
+    if (pts.size() != 8) {
+        return false;
+    }
+
+    float xs[8], ys[8], zs[8];
+    for (int i = 0; i < 8; i++) {
+        xs[i] = pts[i].x;
+        ys[i] = pts[i].y;
+        zs[i] = pts[i].z;
+    }
+
+    auto unique_count = [](float *v) {
+        std::sort(v, v + 8);
+        int c = 1;
+        for (int i = 1; i < 8; i++) {
+            if (!Math::is_equal_approx(v[i], v[i - 1])) {
+                c++;
+            }
+        }
+        return c;
+    };
+
+    if (unique_count(xs) != 2 ||
+        unique_count(ys) != 2 ||
+        unique_count(zs) != 2) {
+        return false;
+    }
+
+    float minx = xs[0], maxx = xs[7];
+    float miny = ys[0], maxy = ys[7];
+    float minz = zs[0], maxz = zs[7];
+
+    out_size = Vector3(
+        maxx - minx,
+        maxy - miny,
+        maxz - minz
+    );
+
+    return true;
+}
+
+
 
 static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex) {
     *is_convex = false;
     Ref<Shape3D> shape = collision_shape->get_shape();
     AABB aabb;
 
+    Transform3D glob_xform = collision_shape->get_global_transform();
+
     // optimize for boxshape
     Ref<BoxShape3D> box = shape;
     if(box.is_valid()) {
-        aabb = AABB(-box->get_size() / 2.0f, box->get_size());
-        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        aabb = AABB(-box->get_size() * 0.5f, box->get_size());
+        aabb.position += glob_xform.origin; // convert to world space
         return aabb;
     }
     
@@ -52,7 +100,7 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
     if(sphere.is_valid()) {
         float r = sphere->get_radius();
         aabb = AABB(Vector3(-r,-r,-r), Vector3(2*r,2*r,2*r));
-        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        aabb.position += glob_xform.origin; // convert to world space
         return aabb;
     }
     
@@ -61,17 +109,27 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
     if(caps.is_valid()) {
         float r = caps->get_radius();
         float h = caps->get_height();
-        aabb = AABB(Vector3(-r, -h / 2.0f, -r), Vector3(r * 2.0f, h, r * 2.0f));
-        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        aabb = AABB(Vector3(-r, -h * 0.5f, -r), Vector3(r * 2.0f, h, r * 2.0f));
+        aabb.position += glob_xform.origin; // convert to world space
         return aabb;
     }
     
     // convex polygon
     Ref<ConvexPolygonShape3D> cvx = shape;
-    if(cvx.is_valid()) {
-        *is_convex = true;
-        aabb = cvx->get_debug_mesh()->get_aabb();
-        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+    if (cvx.is_valid()) {
+        Vector3 box_size;
+        if (_convex_is_box(cvx, box_size)) {
+            // treat as BoxShape3D
+            *is_convex = false;
+
+            aabb = AABB(-box_size * 0.5f, box_size);
+        } else {
+            *is_convex = true;
+            // real convex
+            aabb = cvx->get_debug_mesh()->get_aabb();
+        }
+
+        aabb.position += glob_xform.origin;
         return aabb;
     }
 
@@ -276,6 +334,8 @@ void FireComponent3D::_build_grid() {
     _dbg_sphere->set_radius(_cell_size.length() * 0.2f);
     _dbg_sphere->set_height(_dbg_sphere->get_radius()*2.0f);
 
+    Transform3D glob_xform = get_global_transform();
+
     // built it
     for(int x=0; x<grid_resolution.x; x++) {
         for(int y=0; y<grid_resolution.y; y++) {
@@ -309,7 +369,11 @@ void FireComponent3D::_build_grid() {
                 if(!_grid[coord].dbg_mesh_rid.is_valid()) {
                     _grid[coord].dbg_mesh_rid = RenderingServer::get_singleton()->instance_create2(_grid[coord].dbg_mesh_ref->get_rid(), get_world_3d()->get_scenario());
                     RenderingServer::get_singleton()->instance_geometry_set_cast_shadows_setting(_grid[coord].dbg_mesh_rid, RenderingServer::SHADOW_CASTING_SETTING_OFF);
-                    RenderingServer::get_singleton()->instance_set_transform(_grid[coord].dbg_mesh_rid, Transform3D(Basis(), _grid[coord].local_pos) * get_global_transform());
+                    RenderingServer::get_singleton()->instance_set_transform(
+                        _grid[coord].dbg_mesh_rid,
+                        glob_xform * Transform3D(Basis(), _grid[coord].local_pos)
+                    );
+
                 }
             }
         }
@@ -456,12 +520,16 @@ void FireComponent3D::_process(double p_delta) {
 }
 
 void FireComponent3D::_on_xform_changed() {
+    Transform3D glob_xform = get_global_transform();
     for (auto it = _grid.begin(); it != _grid.end(); it++) {
         fire_cell_t & cell = it->second;
         if(!cell.dbg_mesh_rid.is_valid()) {
             continue;
         }
-        RenderingServer::get_singleton()->instance_set_transform(cell.dbg_mesh_rid, Transform3D(Basis(), cell.local_pos) * get_global_transform());
+        RenderingServer::get_singleton()->instance_set_transform(
+            cell.dbg_mesh_rid,
+            glob_xform * Transform3D(Basis(), cell.local_pos)
+        );
     }
 }
 
