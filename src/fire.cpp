@@ -470,10 +470,14 @@ bool FireComponent3D::get_torch() const {
 }
 
 void FireComponent3D::set_visible_debug(bool v) {
-    if(!is_inside_tree() || visible_debug == v) {
+    if(visible_debug == v) {
         return;
     }
     visible_debug = v;
+    
+    if(!is_inside_tree()) {
+        return;
+    }
     
     RenderingServer * rs = RenderingServer::get_singleton();
     for (auto it = _grid.begin(); it != _grid.end(); it++) {

@@ -92,3 +92,4 @@ shape = SubResource("ConvexPolygonShape3D_p2wxh")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="RealConvex"]
 visible_debug = true
+resolution = Vector3i(2, 3, 3)
