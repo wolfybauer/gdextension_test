@@ -37,31 +37,42 @@ const Vector3i SURROUNDING[6] = {
 static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex) {
     *is_convex = false;
     Ref<Shape3D> shape = collision_shape->get_shape();
+    AABB aabb;
 
     // optimize for boxshape
     Ref<BoxShape3D> box = shape;
     if(box.is_valid()) {
-        return AABB(-box->get_size() / 2.0f, box->get_size());
+        aabb = AABB(-box->get_size() / 2.0f, box->get_size());
+        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        return aabb;
     }
     
     // optimize for sphere
     Ref<SphereShape3D> sphere = shape;
     if(sphere.is_valid()) {
         float r = sphere->get_radius();
-        return AABB(Vector3(-r,-r,-r), Vector3(2*r,2*r,2*r));
+        aabb = AABB(Vector3(-r,-r,-r), Vector3(2*r,2*r,2*r));
+        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        return aabb;
     }
     
     // optimize for capsule
     Ref<CapsuleShape3D> caps = shape;
     if(caps.is_valid()) {
-        return AABB();
+        float r = caps->get_radius();
+        float h = caps->get_height();
+        aabb = AABB(Vector3(-r, -h / 2.0f, -r), Vector3(r * 2.0f, h, r * 2.0f));
+        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        return aabb;
     }
     
     // convex polygon
     Ref<ConvexPolygonShape3D> cvx = shape;
     if(cvx.is_valid()) {
         *is_convex = true;
-        return AABB();
+        aabb = cvx->get_debug_mesh()->get_aabb();
+        aabb.position += collision_shape->get_global_transform().origin; // convert to world space
+        return aabb;
     }
 
     // warn or error
@@ -99,7 +110,7 @@ static void _build_convex_planes(CollisionShape3D * inst, std::vector<Plane> &pl
                     continue;
                 }
 
-                Plane plane = Plane(a, b, b);
+                Plane plane = Plane(a, b, c);
 
                 if(plane.distance_to(center) > 0.0f) {
                     plane = Plane(-plane.normal, -plane.d);
@@ -134,7 +145,9 @@ static void _build_convex_planes(CollisionShape3D * inst, std::vector<Plane> &pl
 }
 
 bool FireComponent3D::_is_inside_object(Vector3 world_pos) {
-    if(!_collision_aabb.has_point(world_pos)) {
+
+    // AABB world_aabb = AABB(_collision_aabb.position + _col_inst->get_global_transform().origin, _collision_aabb.size);
+    if(!(_collision_aabb).has_point(world_pos)) {
         return false;
     }
 
@@ -222,7 +235,7 @@ void FireComponent3D::_extinguish_cell(Vector3i cell) {
 
 }
 
-static bool _is_on_boundary(std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> grid, Vector3i pos) {
+static bool _is_on_boundary(std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> &grid, Vector3i pos) {
     for(Vector3 offset : SURROUNDING) {
         // key not exist, so IS on boundary
         if (grid.find(pos+offset) == grid.end()) {
@@ -280,8 +293,8 @@ void FireComponent3D::_build_grid() {
                     .burning = false,
                     .cooldown = 0.0,
                     .time_left = 0.0,
-                    // .local_pos = to_local(world_pos),
-                    .local_pos = world_pos,
+                    .local_pos = to_local(world_pos),
+                    // .local_pos = world_pos,
                     .emitter = nullptr
                 };
                 if(_grid[coord].dbg_mat_ref.is_null()) {
