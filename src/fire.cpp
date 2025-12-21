@@ -85,13 +85,13 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
     Ref<Shape3D> shape = collision_shape->get_shape();
     AABB aabb;
 
-    Transform3D glob_xform = collision_shape->get_global_transform();
+    // Transform3D glob_xform = collision_shape->get_global_transform();
 
     // optimize for boxshape
     Ref<BoxShape3D> box = shape;
     if(box.is_valid()) {
         aabb = AABB(-box->get_size() * 0.5f, box->get_size());
-        aabb.position += glob_xform.origin; // convert to world space
+        // aabb.position += glob_xform.origin; // convert to world space
         return aabb;
     }
     
@@ -100,7 +100,7 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
     if(sphere.is_valid()) {
         float r = sphere->get_radius();
         aabb = AABB(Vector3(-r,-r,-r), Vector3(2*r,2*r,2*r));
-        aabb.position += glob_xform.origin; // convert to world space
+        // aabb.position += glob_xform.origin; // convert to world space
         return aabb;
     }
     
@@ -110,7 +110,7 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
         float r = caps->get_radius();
         float h = caps->get_height();
         aabb = AABB(Vector3(-r, -h * 0.5f, -r), Vector3(r * 2.0f, h, r * 2.0f));
-        aabb.position += glob_xform.origin; // convert to world space
+        // aabb.position += glob_xform.origin; // convert to world space
         return aabb;
     }
     
@@ -129,7 +129,7 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
             aabb = cvx->get_debug_mesh()->get_aabb();
         }
 
-        aabb.position += glob_xform.origin;
+        // aabb.position += glob_xform.origin;
         return aabb;
     }
 
@@ -202,25 +202,26 @@ static void _build_convex_planes(CollisionShape3D * inst, std::vector<Plane> &pl
     }
 }
 
-bool FireComponent3D::_is_inside_object(Vector3 world_pos) {
-
-    // AABB world_aabb = AABB(_collision_aabb.position + _col_inst->get_global_transform().origin, _collision_aabb.size);
-    if(!(_collision_aabb).has_point(world_pos)) {
+bool FireComponent3D::_is_inside_object(Vector3 local_pos) {
+    // local AABB test
+    if (!_local_aabb.has_point(local_pos)) {
         return false;
     }
 
-    if(!_is_convex) {
+    if (!_is_convex) {
         return true;
     }
 
-    Vector3 loc = _col_inst->get_global_transform().affine_inverse().xform(world_pos);
-    for(Plane plane : _convex_planes) {
-        if(plane.distance_to(loc) > 0.001f) {
+    // local convex plane test
+    for (const Plane &plane : _convex_planes) {
+        if (plane.distance_to(local_pos) > 0.001f) {
             return false;
         }
     }
+
     return true;
 }
+
 
 
 
@@ -320,7 +321,7 @@ void FireComponent3D::_build_grid() {
     }
 
     // reset cell size every rebuild
-    _cell_size = _collision_aabb.get_size() / grid_resolution;
+    _cell_size = _local_aabb.get_size() / grid_resolution;
 
     // preclean grid
     _clear_grid();
@@ -335,14 +336,15 @@ void FireComponent3D::_build_grid() {
     _dbg_sphere->set_height(_dbg_sphere->get_radius()*2.0f);
 
     Transform3D glob_xform = get_global_transform();
+    RenderingServer * rs = RenderingServer::get_singleton();
 
     // built it
     for(int x=0; x<grid_resolution.x; x++) {
         for(int y=0; y<grid_resolution.y; y++) {
             for(int z=0; z<grid_resolution.z; z++) {
                 Vector3i coord = Vector3i(x,y,z);
-                Vector3 world_pos = _collision_aabb.position + Vector3(x,y,z) * _cell_size + _cell_size * 0.5f;
-                if(!_is_inside_object(world_pos)) {
+                Vector3 loc = _local_aabb.position + Vector3(x,y,z) * _cell_size + _cell_size * 0.5f;
+                if(!_is_inside_object(loc)) {
                     continue;
                 }
 
@@ -353,8 +355,8 @@ void FireComponent3D::_build_grid() {
                     .burning = false,
                     .cooldown = 0.0,
                     .time_left = 0.0,
-                    .local_pos = to_local(world_pos),
-                    // .local_pos = world_pos,
+                    // .local_pos = to_local(world_pos),
+                    .local_pos = loc,
                     .emitter = nullptr
                 };
                 if(_grid[coord].dbg_mat_ref.is_null()) {
@@ -367,12 +369,13 @@ void FireComponent3D::_build_grid() {
                 }
 
                 if(!_grid[coord].dbg_mesh_rid.is_valid()) {
-                    _grid[coord].dbg_mesh_rid = RenderingServer::get_singleton()->instance_create2(_grid[coord].dbg_mesh_ref->get_rid(), get_world_3d()->get_scenario());
-                    RenderingServer::get_singleton()->instance_geometry_set_cast_shadows_setting(_grid[coord].dbg_mesh_rid, RenderingServer::SHADOW_CASTING_SETTING_OFF);
-                    RenderingServer::get_singleton()->instance_set_transform(
+                    _grid[coord].dbg_mesh_rid = rs->instance_create2(_grid[coord].dbg_mesh_ref->get_rid(), get_world_3d()->get_scenario());
+                    rs->instance_geometry_set_cast_shadows_setting(_grid[coord].dbg_mesh_rid, RenderingServer::SHADOW_CASTING_SETTING_OFF);
+                    rs->instance_set_transform(
                         _grid[coord].dbg_mesh_rid,
                         glob_xform * Transform3D(Basis(), _grid[coord].local_pos)
                     );
+                    rs->instance_set_visible(_grid[coord].dbg_mesh_rid, visible_debug);
 
                 }
             }
@@ -419,16 +422,25 @@ void FireComponent3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_torch", "t"), &FireComponent3D::set_torch);
 	ClassDB::bind_method(D_METHOD("get_torch"), &FireComponent3D::get_torch);
 
+    ClassDB::bind_method(D_METHOD("set_visible_debug", "v"), &FireComponent3D::set_visible_debug);
+	ClassDB::bind_method(D_METHOD("get_visible_debug"), &FireComponent3D::get_visible_debug);
+
     ClassDB::bind_method(D_METHOD("set_resolution", "r"), &FireComponent3D::set_resolution);
 	ClassDB::bind_method(D_METHOD("get_resolution"), &FireComponent3D::get_resolution);
 
-    ClassDB::bind_method(D_METHOD("set_max_hp", "r"), &FireComponent3D::set_max_hp);
+    ClassDB::bind_method(D_METHOD("set_max_hp", "h"), &FireComponent3D::set_max_hp);
 	ClassDB::bind_method(D_METHOD("get_max_hp"), &FireComponent3D::get_max_hp);
 
     ADD_PROPERTY(
         PropertyInfo(Variant::BOOL, "torch", PROPERTY_HINT_RESOURCE_TYPE, "bool"),
         "set_torch",
         "get_torch"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::BOOL, "visible_debug", PROPERTY_HINT_RESOURCE_TYPE, "bool"),
+        "set_visible_debug",
+        "get_visible_debug"
     );
 
     ADD_PROPERTY(
@@ -455,6 +467,28 @@ void FireComponent3D::set_torch(bool t) {
 }
 bool FireComponent3D::get_torch() const {
     return is_torch;
+}
+
+void FireComponent3D::set_visible_debug(bool v) {
+    if(!is_inside_tree() || visible_debug == v) {
+        return;
+    }
+    visible_debug = v;
+    
+    RenderingServer * rs = RenderingServer::get_singleton();
+    for (auto it = _grid.begin(); it != _grid.end(); it++) {
+        fire_cell_t & cell = it->second;
+        if(!cell.dbg_mesh_rid.is_valid()) {
+            continue;
+        }
+        rs->instance_set_visible(cell.dbg_mesh_rid, visible_debug);
+    }
+
+    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "visible_debug=", visible_debug);
+
+}
+bool FireComponent3D::get_visible_debug() const {
+    return visible_debug;
 }
 
 void FireComponent3D::set_max_hp(int h) {
@@ -498,7 +532,7 @@ void FireComponent3D::_on_ready() {
     }
 
     // get bunrable object's aabb (and determine if convex), get cell size(radius in physical space)
-    _collision_aabb = _get_shape_aabb(_col_inst, &_is_convex);
+    _local_aabb = _get_shape_aabb(_col_inst, &_is_convex);
     
     // get planes for is_inside checking
     if(_is_convex) {
@@ -509,7 +543,7 @@ void FireComponent3D::_on_ready() {
     set_notify_transform(true);
 
     UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_is_convex=", _is_convex);
-    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_collision_aabb=", _collision_aabb);
+    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_local_aabb=", _local_aabb);
     UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_cell_size=", _cell_size);
     UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_grid.size()=", _grid.size());
 
@@ -520,6 +554,9 @@ void FireComponent3D::_process(double p_delta) {
 }
 
 void FireComponent3D::_on_xform_changed() {
+    // if(!visible_debug) {
+    //     return;
+    // }
     Transform3D glob_xform = get_global_transform();
     for (auto it = _grid.begin(); it != _grid.end(); it++) {
         fire_cell_t & cell = it->second;

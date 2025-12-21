@@ -63,6 +63,9 @@ public:
     void set_torch(bool t);
     bool get_torch() const;
 
+    void set_visible_debug(bool v);
+    bool get_visible_debug() const;
+
     void set_max_hp(int h);
     int get_max_hp() const;
 
@@ -77,6 +80,7 @@ protected:
 private:
     bool is_torch = false;
     bool enable_interior_cells = false;
+    bool visible_debug = false;
     int spread_damage = 10;
     float spread_margin = 0.7f;
     float spread_interval = 0.5f;
@@ -87,14 +91,14 @@ private:
     Node3D * _parent = nullptr;
     
     std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> _grid;
-    AABB _collision_aabb;
+    AABB _local_aabb;
     Vector3 _cell_size;
     bool _is_convex = false;
     CollisionShape3D * _col_inst;
     std::vector<Plane> _convex_planes;
     Ref<SphereMesh> _dbg_sphere;
 
-    bool _is_inside_object(Vector3 world_pos);
+    bool _is_inside_object(Vector3 local_pos);
     fire_cell_t * _get_closest_cell(Vector3 world_pos, Vector3i * cell);
     void _ignite_cell(Vector3i cell);
     void _extinguish_cell(Vector3i cell);
