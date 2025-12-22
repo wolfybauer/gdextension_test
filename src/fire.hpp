@@ -1,8 +1,10 @@
 #pragma once
 
+#include "godot_cpp/classes/area3d.hpp"
+#include "godot_cpp/classes/box_shape3d.hpp"
 #include "godot_cpp/classes/collision_shape3d.hpp"
 #include "godot_cpp/classes/sphere_mesh.hpp"
-#include "godot_cpp/classes/sphere_shape3d.hpp"
+// #include "godot_cpp/classes/sphere_shape3d.hpp"
 #include "godot_cpp/classes/standard_material3d.hpp"
 #include "godot_cpp/variant/plane.hpp"
 #include "godot_cpp/variant/vector3.hpp"
@@ -13,6 +15,14 @@
 #include <vector>
 
 namespace godot {
+
+#define DBG_VISUAL_UPDATE_MS 1000.0
+#define DEFAULT_SPREAD_BUDGET 20
+#define BURN_TIME_MS 4000
+
+#define DEFAULT_COL_LAYER   30
+#define DEFAULT_MASK_LAYER  31
+
 
 static inline uint64_t hash_combine(uint64_t h, uint64_t k) {
     k *= 0xff51afd7ed558ccdULL;
@@ -39,10 +49,10 @@ struct Vector3iEq {
 };
 
 typedef struct {
-    float hitpoints;
+    int hitpoints;
     bool burning;
-    float cooldown;
-    float time_left;
+    int cooldown;
+    int time_left;
     Vector3 local_pos;
     Node3D * emitter;
     RID dbg_mesh_rid;
@@ -69,8 +79,17 @@ public:
     void set_max_hp(int h);
     int get_max_hp() const;
 
+    void set_fire_collision_layer(int l);
+    int get_fire_collision_layer() const;
+
+    void set_flammable_collision_layer(int l);
+    int get_flammable_collision_layer() const;
+
     void set_resolution(Vector3i t);
     Vector3i get_resolution() const;
+
+    int get_spread_budget() const;
+    void set_spread_budget(int v);
 
 protected:
     static void _bind_methods();
@@ -78,25 +97,45 @@ protected:
     void apply_fire(Vector3 world_pos, int damage);
 
 private:
+
+    // globals
+    static int spread_budget;
+    static int max_spread;
+    static int fire_collision_layer;
+    static int flammable_collision_layer;
+    
+    // exports
+    Vector3i grid_resolution = Vector3i(3, 3, 3);
     bool is_torch = false;
-    bool enable_interior_cells = false;
     bool visible_debug = false;
+    int max_hitpoints = 45;
+
     int spread_damage = 10;
     float spread_margin = 0.7f;
     float spread_interval = 0.5f;
-    Vector3i grid_resolution = Vector3i(3, 3, 3);
-    int max_hitpoints = 45;
+
+    // internals
     int _last_max_hp = 45;
+    double _dbg_visuals_timer = DBG_VISUAL_UPDATE_MS;
 
     Node3D * _parent = nullptr;
-    
+
+    // grid setup
     std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> _grid;
     AABB _local_aabb;
     Vector3 _cell_size;
-    bool _is_convex = false;
-    CollisionShape3D * _col_inst;
     std::vector<Plane> _convex_planes;
-    Ref<SphereMesh> _dbg_sphere;
+    bool _is_convex = false;
+
+    // colliding burn area
+    CollisionShape3D * _base_col_inst = nullptr;
+    CollisionShape3D * _burn_area_col_inst = nullptr;
+    Area3D * _burn_area = nullptr;
+    Ref<BoxShape3D> _burn_box_ref;
+
+    Ref<SphereMesh> _dbg_sphere_ref;
+
+    // funcs
 
     bool _is_inside_object(Vector3 local_pos);
     fire_cell_t * _get_closest_cell(Vector3 world_pos, Vector3i * cell);
@@ -104,11 +143,14 @@ private:
     void _extinguish_cell(Vector3i cell);
     
     void _on_ready();
+    void _on_process(double delta);
     void _on_xform_changed();
 
     void _build_grid();
     void _clear_grid();
+    void _cleanup();
     void _intra_spread(double delta);
+    void _update_burn_area();
 };
 
 }
