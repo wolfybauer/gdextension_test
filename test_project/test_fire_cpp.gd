@@ -8,4 +8,7 @@ func _ready() -> void:
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("ui_accept"):
-		real_convex.emit_signal("spread_fire", Vector3(10,randf(),-10), 20)
+		var pos:Vector3 = Vector3(randf_range(-10.0,10.0),randf_range(-10.0,10.0),randf_range(-10.0,10.0))
+		var dam:int = randi_range(10,100)
+		print('applying %d damage from world_pos=' % dam, pos)
+		real_convex.emit_signal("spread_fire", pos, dam)

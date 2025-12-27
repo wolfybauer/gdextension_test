@@ -71,7 +71,7 @@ script = ExtResource("3_gnr80")
 visible_debug = true
 
 [node name="FakeConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.702327, 0.71185446, 0, -0.71185446, 0.702327, 0, 2.9341006, -3.8106158)
+transform = Transform3D(1, 0, 0, 0, 0.702327, 0.71185446, 0, -0.71185446, 0.702327, 6.008024, 2.9341006, -3.8106158)
 collision_layer = 536870913
 collision_mask = 1073741825
 

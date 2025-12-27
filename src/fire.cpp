@@ -9,6 +9,7 @@
 #include "godot_cpp/classes/physics_body3d.hpp"
 // #include "godot_cpp/classes/random_number_generator.hpp"
 #include "godot_cpp/classes/rendering_server.hpp"
+#include "godot_cpp/classes/resource_loader.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/sphere_shape3d.hpp"
 #include "godot_cpp/classes/capsule_shape3d.hpp"
@@ -37,10 +38,11 @@
 
 using namespace godot;
 
-int FireComponent3D::spread_budget = DEFAULT_SPREAD_BUDGET;
-int FireComponent3D::max_spread = DEFAULT_SPREAD_BUDGET;
-int FireComponent3D::fire_collision_layer = DEFAULT_COL_LAYER;
-int FireComponent3D::flammable_collision_layer = DEFAULT_MASK_LAYER;
+int FireComponent3D::s_spread_budget = DEFAULT_SPREAD_BUDGET;
+int FireComponent3D::s_max_spread = DEFAULT_SPREAD_BUDGET;
+int FireComponent3D::s_fire_collision_layer = DEFAULT_COL_LAYER;
+int FireComponent3D::s_flammable_collision_layer = DEFAULT_MASK_LAYER;
+Ref<PackedScene> FireComponent3D::s_default_emitter_scene;
 
 const Color DBG_COLD_COLOR = Color(0.5f, 0.5f, 0.5f);
 const Color DBG_BURN_COLOR = Color(0.1f, 0.0f, 0.0f);
@@ -312,13 +314,13 @@ void FireComponent3D::apply_fire(Vector3 world_pos, int damage) {
 
 void FireComponent3D::_ignite_cell(Vector3i cell) {
     fire_cell_t & data = _grid[cell];
-    if((spread_budget < 1) || data.burning) {
+    if((s_spread_budget < 1) || data.burning) {
         return;
     }
 
     data.burning = true;
     data.time_left = BURN_TIME_S;
-    spread_budget = MAX(spread_budget-1, 0);
+    s_spread_budget = MAX(s_spread_budget-1, 0);
 
     _burn_count++;
 
@@ -341,7 +343,7 @@ void FireComponent3D::_extinguish_cell(Vector3i cell) {
     
     data.burning = false;
     data.hitpoints = max_hitpoints;
-    spread_budget = MIN(spread_budget+1, max_spread);
+    s_spread_budget = MIN(s_spread_budget+1, s_max_spread);
     data.cooldown = BURN_TIME_S * 0.5f;
 
     _burn_count--;
@@ -549,8 +551,26 @@ void FireComponent3D::_bind_methods() {
 	
     ClassDB::bind_method(D_METHOD("apply_fire"), &FireComponent3D::apply_fire);
 
+    ClassDB::bind_method(D_METHOD("set_default_emitter", "scene"), &FireComponent3D::set_default_emitter);
+    ClassDB::bind_method(D_METHOD("get_default_emitter"), &FireComponent3D::get_default_emitter);
+
+    ClassDB::bind_method(D_METHOD("set_override_emitter", "scene"), &FireComponent3D::set_override_emitter);
+    ClassDB::bind_method(D_METHOD("get_override_emitter"), &FireComponent3D::get_override_emitter);
+
     ADD_PROPERTY(
-        PropertyInfo(Variant::INT, "spread_budget", PROPERTY_HINT_RANGE, "0,1000,1"),
+        PropertyInfo(Variant::OBJECT, "static/default_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
+        "set_default_emitter",
+        "get_default_emitter"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::OBJECT, "override_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
+        "set_override_emitter",
+        "get_override_emitter"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::INT, "static/s_spread_budget", PROPERTY_HINT_RANGE, "0,1000,1"),
         "set_spread_budget",
         "get_spread_budget"
     );
@@ -586,17 +606,42 @@ void FireComponent3D::_bind_methods() {
     );
 
     ADD_PROPERTY(
-        PropertyInfo(Variant::INT, "fire_collision_layer", PROPERTY_HINT_RANGE, "0,31,1"),
+        PropertyInfo(Variant::INT, "static/s_fire_collision_layer", PROPERTY_HINT_RANGE, "0,31,1"),
         "set_fire_collision_layer",
         "get_fire_collision_layer"
     );
 
     ADD_PROPERTY(
-        PropertyInfo(Variant::INT, "flammable_collision_layer", PROPERTY_HINT_RANGE, "0,31,1"),
+        PropertyInfo(Variant::INT, "static/s_flammable_collision_layer", PROPERTY_HINT_RANGE, "0,31,1"),
         "set_flammable_collision_layer",
         "get_flammable_collision_layer"
     );
 }
+
+
+Ref<PackedScene> FireComponent3D::_get_emitter_scene() const {
+    if (_override_emitter_scene.is_valid()) {
+        return _override_emitter_scene;
+    }
+    return s_default_emitter_scene;
+}
+
+void FireComponent3D::set_default_emitter(const Ref<PackedScene> &scene) {
+    s_default_emitter_scene = scene;
+}
+
+Ref<PackedScene> FireComponent3D::get_default_emitter() const {
+    return s_default_emitter_scene;
+}
+
+void FireComponent3D::set_override_emitter(const Ref<PackedScene> &scene) {
+    _override_emitter_scene = scene;
+}
+
+Ref<PackedScene> FireComponent3D::get_override_emitter() const {
+    return _override_emitter_scene;
+}
+
 
 void FireComponent3D::set_torch(bool t) {
     if(t) {
@@ -669,24 +714,24 @@ Vector3i FireComponent3D::get_resolution() const {
 
 int FireComponent3D::get_spread_budget() const {
     if(Engine::get_singleton()->is_editor_hint()) {
-        return max_spread;
+        return s_max_spread;
     }
-    return spread_budget;
+    return s_spread_budget;
 }
 
 void FireComponent3D::set_spread_budget(int v) {
-    max_spread = MAX(v, 0);
+    s_max_spread = MAX(v, 0);
 }
 
 void FireComponent3D::set_fire_collision_layer(int l) {
-    if(fire_collision_layer == l) {
+    if(s_fire_collision_layer == l) {
         return;
     }
     l = MAX(0, l);
     l = MIN(31, l);
     // unset old collision layer
     if(!is_inside_tree()) {
-        fire_collision_layer = l;
+        s_fire_collision_layer = l;
         return;
     }
     SceneTree * tree = get_tree();
@@ -695,24 +740,24 @@ void FireComponent3D::set_fire_collision_layer(int l) {
         if(body == nullptr) {
             continue;
         }
-        body->set_collision_layer_value(fire_collision_layer, false);
+        body->set_collision_layer_value(s_fire_collision_layer, false);
         body->set_collision_layer_value(l, true);
     }
-    fire_collision_layer = l;
+    s_fire_collision_layer = l;
 }
 int FireComponent3D::get_fire_collision_layer() const {
-    return fire_collision_layer;
+    return s_fire_collision_layer;
 }
 
 void FireComponent3D::set_flammable_collision_layer(int l) {
-    if(flammable_collision_layer == l) {
+    if(s_flammable_collision_layer == l) {
         return;
     }
     l = MAX(0, l);
     l = MIN(31, l);
     // unset old collision layer
     if(!is_inside_tree()) {
-        flammable_collision_layer = l;
+        s_flammable_collision_layer = l;
         return;
     }
     SceneTree * tree = get_tree();
@@ -721,13 +766,13 @@ void FireComponent3D::set_flammable_collision_layer(int l) {
         if(body == nullptr) {
             continue;
         }
-        body->set_collision_mask_value(flammable_collision_layer, false);
+        body->set_collision_mask_value(s_flammable_collision_layer, false);
         body->set_collision_mask_value(l, true);
     }
-    flammable_collision_layer = l;
+    s_flammable_collision_layer = l;
 }
 int FireComponent3D::get_flammable_collision_layer() const {
-    return flammable_collision_layer;
+    return s_flammable_collision_layer;
 }
 
 bool FireComponent3D::is_on_fire() const {
@@ -739,6 +784,19 @@ void FireComponent3D::_on_ready() {
     _parent = get_parent_node_3d();
 	if (!_parent) {
 		return;
+    }
+
+    // lazy load default emitter scene
+    if (s_default_emitter_scene.is_null()) {
+        s_default_emitter_scene = ResourceLoader::get_singleton()->load(
+            "res://gde_test/assets/fire/fire_particles.tscn"
+        );
+
+        if (s_default_emitter_scene.is_null()) {
+            UtilityFunctions::print(
+                "[FireComponent3D] failed to load default emitter scene"
+            );
+        }
     }
 
     // find the CollisionShape3D
@@ -906,9 +964,9 @@ void FireComponent3D::_on_process(double delta) {
 
 
 void FireComponent3D::_on_xform_changed() {
-    // if(!visible_debug) {
-    //     return;
-    // }
+    if(!is_inside_tree()) {
+        return;
+    }
     Transform3D glob_xform = get_global_transform();
     for (auto & it : _grid) {
         fire_cell_t & cell = it.second;
@@ -951,38 +1009,3 @@ void FireComponent3D::_notification(int p_what) {
             break;
     }
 }
-
-
-// void FireComponent3D::_print_grid() {
-//     UtilityFunctions::print("---- fire grid ---- ", _parent->get_name());
-
-//     for (int y = 0; y < grid_resolution.y; y++) {
-//         UtilityFunctions::prints("y =", y);
-
-//         for (int z = 0; z < grid_resolution.z; z++) {
-//             String line;
-
-//             for (int x = 0; x < grid_resolution.x; x++) {
-//                 Vector3i p(x, y, z);
-//                 auto it = _grid.find(p);
-
-//                 if (it == _grid.end()) {
-//                     line += ' ';   // no cell
-//                     continue;
-//                 }
-
-//                 const fire_cell_t &c = it->second;
-
-//                 if (c.burning) {
-//                     line += 'F';   // burning
-//                 } else if (c.hitpoints < max_hitpoints) {
-//                     line += 'h';   // heating / damaged
-//                 } else {
-//                     line += '.';   // cold
-//                 }
-//             }
-
-//             UtilityFunctions::print(line);
-//         }
-//     }
-// }

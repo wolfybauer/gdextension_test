@@ -3,6 +3,7 @@
 #include "godot_cpp/classes/area3d.hpp"
 #include "godot_cpp/classes/box_shape3d.hpp"
 #include "godot_cpp/classes/collision_shape3d.hpp"
+#include "godot_cpp/classes/packed_scene.hpp"
 #include "godot_cpp/classes/sphere_mesh.hpp"
 // #include "godot_cpp/classes/sphere_shape3d.hpp"
 #include "godot_cpp/classes/standard_material3d.hpp"
@@ -97,6 +98,12 @@ public:
 
     bool is_on_fire() const;
 
+    void set_default_emitter(const Ref<PackedScene> &scene);
+    Ref<PackedScene> get_default_emitter() const;
+    void set_override_emitter(const Ref<PackedScene> &scene);
+    Ref<PackedScene> get_override_emitter() const;
+
+
 protected:
     static void _bind_methods();
 
@@ -105,10 +112,15 @@ protected:
 private:
 
     // globals
-    static int spread_budget;
-    static int max_spread;
-    static int fire_collision_layer;
-    static int flammable_collision_layer;
+    static int s_spread_budget;
+    static int s_max_spread;
+    static int s_fire_collision_layer;
+    static int s_flammable_collision_layer;
+    static Ref<PackedScene> s_default_emitter_scene;
+
+    // per-instance override
+    Ref<PackedScene> _override_emitter_scene;
+
     
     // exports
     Vector3i grid_resolution = Vector3i(3, 3, 3);
@@ -116,6 +128,7 @@ private:
     bool is_torch = false;
     bool visible_debug = false;
     int max_hitpoints = 45;
+
 
     int spread_damage = 10;
     float spread_margin = 0.7f;
@@ -161,8 +174,8 @@ private:
     void _intra_spread(Vector3i pos, fire_cell_t & data, float dt);
     void _check_inter_spread();
     void _update_burn_area();
+    Ref<PackedScene> _get_emitter_scene() const;
 
-    // void _print_grid();
 };
 
 }
