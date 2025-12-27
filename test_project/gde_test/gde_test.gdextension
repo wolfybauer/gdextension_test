@@ -2,6 +2,10 @@
 entry_symbol = "gde_test_init"
 compatibility_minimum = "4.5"
 
+[icons]
+
+DestronoiNode = "res://addons/gde_test/assets/destronoi/destronoi_icon.svg"
+
 [libraries]
 ; Relative paths ensure that our GDExtension can be placed anywhere in the project directory.
 macos.debug = "./bin/macos/libgde_test.macos.template_debug.single.framework"

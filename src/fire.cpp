@@ -4,6 +4,8 @@
 // #include "godot_cpp/classes/base_material3d.hpp"
 #include "godot_cpp/classes/box_shape3d.hpp"
 #include "godot_cpp/classes/engine.hpp"
+#include "godot_cpp/classes/fast_noise_lite.hpp"
+#include "godot_cpp/classes/node3d.hpp"
 #include "godot_cpp/classes/physics_body3d.hpp"
 // #include "godot_cpp/classes/random_number_generator.hpp"
 #include "godot_cpp/classes/rendering_server.hpp"
@@ -18,11 +20,15 @@
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/core/math.hpp"
 #include "godot_cpp/core/memory.hpp"
+#include "godot_cpp/core/property_info.hpp"
 #include "godot_cpp/variant/aabb.hpp"
+#include "godot_cpp/variant/array.hpp"
 #include "godot_cpp/variant/color.hpp"
+#include "godot_cpp/variant/dictionary.hpp"
 #include "godot_cpp/variant/packed_vector3_array.hpp"
 #include "godot_cpp/variant/plane.hpp"
 #include "godot_cpp/variant/transform3d.hpp"
+#include "godot_cpp/variant/variant.hpp"
 #include "godot_cpp/variant/vector3.hpp"
 #include "godot_cpp/variant/vector3i.hpp"
 #include <algorithm>
@@ -37,7 +43,7 @@ int FireComponent3D::fire_collision_layer = DEFAULT_COL_LAYER;
 int FireComponent3D::flammable_collision_layer = DEFAULT_MASK_LAYER;
 
 const Color DBG_COLD_COLOR = Color(0.5f, 0.5f, 0.5f);
-const Color DBG_BURN_COLOR = Color(1.0f, 1.0f, 1.0f);
+const Color DBG_BURN_COLOR = Color(0.1f, 0.0f, 0.0f);
 
 const Vector3i SURROUNDING[6] = {
     Vector3i(1, 0, 0),
@@ -257,6 +263,12 @@ fire_cell_t * FireComponent3D::_get_closest_cell(Vector3 world_pos, Vector3i * c
 
 void FireComponent3D::_update_burn_area() {
 
+    // nothing burning
+    if(_burn_count == 0) {
+        _burn_area->set_monitoring(false);
+        return;
+    }
+
     // get combined aabb of all burn points
     AABB burn_aabb = AABB();
     for(auto &kv : _grid) {
@@ -268,12 +280,6 @@ void FireComponent3D::_update_burn_area() {
         Vector3 world_pos = to_global(data.local_pos);
         AABB new_box = AABB(world_pos, _cell_size);
         burn_aabb = burn_aabb.merge(new_box);
-    }
-
-    // nothing burning
-    if(burn_aabb.size.is_zero_approx()) {
-        _burn_area->set_monitoring(false);
-        return;
     }
 
     burn_aabb.position -= (Vector3(1,1,1) * spread_margin);
@@ -299,22 +305,26 @@ void FireComponent3D::apply_fire(Vector3 world_pos, int damage) {
     }
 
     cell->hitpoints -= damage;
-    if(cell->hitpoints <= 0) {
+    if(cell->hitpoints <= 0.0f) {
         _ignite_cell(pos);
-        // TODO: EMIT CATCH FIRE SIGNAL HERE
-        // (check if NOT on fire first?)
     }
 }
 
 void FireComponent3D::_ignite_cell(Vector3i cell) {
     fire_cell_t & data = _grid[cell];
-    if(!spread_budget || data.burning) {
+    if((spread_budget < 1) || data.burning) {
         return;
     }
 
     data.burning = true;
-    data.time_left = BURN_TIME_MS;
+    data.time_left = BURN_TIME_S;
     spread_budget = MAX(spread_budget-1, 0);
+
+    _burn_count++;
+
+    if(_burn_count == 1) {
+        emit_signal("ignite", to_global(data.local_pos));
+    }
 
     // TODO setup particle emitter for cell
 
@@ -327,15 +337,18 @@ void FireComponent3D::_extinguish_cell(Vector3i cell) {
         return;
     }
 
-    data.burning = false;
-
     // TODO teardown particle emitter for cell
-
+    
+    data.burning = false;
     data.hitpoints = max_hitpoints;
     spread_budget = MIN(spread_budget+1, max_spread);
-    data.cooldown = BURN_TIME_MS / 2;
+    data.cooldown = BURN_TIME_S * 0.5f;
 
-    // TODO update burning area
+    _burn_count--;
+    if(_burn_count == 0) {
+        emit_signal("extinguish");
+    }
+
     _update_burn_area();
 
 }
@@ -355,6 +368,7 @@ void FireComponent3D::_clear_grid() {
         fire_cell_t & cell = it->second;
         if(cell.dbg_mesh_rid.is_valid()) {
             RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
+            cell.dbg_mesh_rid = RID();
         }
         it = _grid.erase(it);
     }
@@ -401,13 +415,11 @@ void FireComponent3D::_build_grid() {
                     continue;
                 }
 
-                // TODO setup debug visuals
-
                 _grid[coord] = {
-                    .hitpoints = (is_torch) ? -1 : max_hitpoints,
+                    .hitpoints = (is_torch) ? -1 : (float)max_hitpoints,
                     .burning = false,
-                    .cooldown = 0,
-                    .time_left = 0,
+                    .cooldown = 0.0f,
+                    .time_left = BURN_TIME_S,
                     // .local_pos = to_local(world_pos),
                     .local_pos = loc,
                     .emitter = nullptr
@@ -443,6 +455,7 @@ void FireComponent3D::_build_grid() {
             fire_cell_t & cell = it->second;
             if(cell.dbg_mesh_rid.is_valid()) {
                 RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
+                cell.dbg_mesh_rid = RID();
             }
             it = _grid.erase(it);
         } else {
@@ -451,35 +464,68 @@ void FireComponent3D::_build_grid() {
     }
 }
 
-void FireComponent3D::_intra_spread(double delta) {
-
-    for (auto it : _grid ) {
-        Vector3i pos = it.first;
-        fire_cell_t & data = it.second;
-
-        if(!data.burning) {
+void FireComponent3D::_intra_spread(Vector3i pos, fire_cell_t & data, float dt) {
+    // spread to neighboring cells
+    for(Vector3i offset : SURROUNDING) {
+        // key not exist, skip
+        if (_grid.find(pos+offset) == _grid.end()) {
             continue;
         }
 
-        // spread to neighboring cells
-        for(Vector3i offset : SURROUNDING) {
-            // key not exist, skip
-            if (_grid.find(pos+offset) == _grid.end()) {
-                continue;
-            }
+        fire_cell_t & neighb = _grid[pos+offset];
+        if(!neighb.burning && neighb.cooldown <= 0.0f) {
+            UtilityFunctions::prints(
+                "[NEIGH]",
+                "src=", pos,
+                "dst=", pos + offset,
+                "burning=", neighb.burning,
+                "cd=", neighb.cooldown,
+                "hp=", neighb.hitpoints
+            );
 
-            fire_cell_t & neighb = _grid[pos+offset];
-            if(!neighb.burning && neighb.cooldown <= 0) {
-
+            neighb.hitpoints -= spread_damage * dt;
+            if(neighb.hitpoints <= 0.0f) {
+                _ignite_cell(pos+offset);
             }
         }
     }
 }
 
+void FireComponent3D::_check_inter_spread() {
+    if(!is_on_fire()) {
+        return;
+    }
+
+    Vector3 pos = _burn_area->get_global_transform().origin;
+    int dmg = (int)(spread_damage * _burn_count * 0.5f);
+
+    emit_signal("damage", dmg);
+
+    for(auto &n : _burn_area->get_overlapping_bodies()) {
+        Node3D * body = Object::cast_to<Node3D>(n);
+        if(body ==nullptr || !body->is_in_group("flammable")) {
+            continue;
+        }
+        if(!body->has_user_signal("spread_fire")) {
+            UtilityFunctions::print("[Enflame] ERROR no spread signal", get_name(), "->", body->get_name());
+            continue;
+        }
+        body->emit_signal("spread_fire", pos, dmg);
+    }
+}
+
+
 
 void FireComponent3D::_bind_methods() {
+    ADD_SIGNAL(MethodInfo("ignite", PropertyInfo(Variant::VECTOR3, "world_pos")));
+    ADD_SIGNAL(MethodInfo("damage", PropertyInfo(Variant::INT, "amount")));
+    ADD_SIGNAL(MethodInfo("extinguish"));
+
     ClassDB::bind_method(D_METHOD("set_torch", "t"), &FireComponent3D::set_torch);
 	ClassDB::bind_method(D_METHOD("get_torch"), &FireComponent3D::get_torch);
+
+    ClassDB::bind_method(D_METHOD("set_disabled", "d"), &FireComponent3D::set_disabled);
+	ClassDB::bind_method(D_METHOD("get_disabled"), &FireComponent3D::get_disabled);
 
     ClassDB::bind_method(D_METHOD("set_visible_debug", "v"), &FireComponent3D::set_visible_debug);
 	ClassDB::bind_method(D_METHOD("get_visible_debug"), &FireComponent3D::get_visible_debug);
@@ -499,10 +545,20 @@ void FireComponent3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_flammable_collision_layer", "l"), &FireComponent3D::set_flammable_collision_layer);
 	ClassDB::bind_method(D_METHOD("get_flammable_collision_layer"), &FireComponent3D::get_flammable_collision_layer);
 
+	ClassDB::bind_method(D_METHOD("is_on_fire"), &FireComponent3D::is_on_fire);
+	
+    ClassDB::bind_method(D_METHOD("apply_fire"), &FireComponent3D::apply_fire);
+
     ADD_PROPERTY(
         PropertyInfo(Variant::INT, "spread_budget", PROPERTY_HINT_RANGE, "0,1000,1"),
         "set_spread_budget",
         "get_spread_budget"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(Variant::BOOL, "disabled", PROPERTY_HINT_RESOURCE_TYPE, "bool"),
+        "set_disabled",
+        "get_disabled"
     );
 
     ADD_PROPERTY(
@@ -550,6 +606,13 @@ void FireComponent3D::set_torch(bool t) {
         max_hitpoints = _last_max_hp;
     }
     is_torch = t;
+    if(Engine::get_singleton()->is_editor_hint() || !is_torch) {
+        return;
+    }
+
+    for(auto & it : _grid) {
+        _ignite_cell(it.first);
+    }
 }
 bool FireComponent3D::get_torch() const {
     return is_torch;
@@ -566,8 +629,8 @@ void FireComponent3D::set_visible_debug(bool v) {
     }
     
     RenderingServer * rs = RenderingServer::get_singleton();
-    for (auto it = _grid.begin(); it != _grid.end(); it++) {
-        fire_cell_t & cell = it->second;
+    for (auto & it : _grid) {
+        fire_cell_t & cell = it.second;
         if(!cell.dbg_mesh_rid.is_valid()) {
             continue;
         }
@@ -579,6 +642,14 @@ void FireComponent3D::set_visible_debug(bool v) {
 }
 bool FireComponent3D::get_visible_debug() const {
     return visible_debug;
+}
+
+void FireComponent3D::set_disabled(bool d) {
+    disabled = d;
+
+}
+bool FireComponent3D::get_disabled() const {
+    return disabled;
 }
 
 void FireComponent3D::set_max_hp(int h) {
@@ -597,6 +668,9 @@ Vector3i FireComponent3D::get_resolution() const {
 }
 
 int FireComponent3D::get_spread_budget() const {
+    if(Engine::get_singleton()->is_editor_hint()) {
+        return max_spread;
+    }
     return spread_budget;
 }
 
@@ -616,7 +690,7 @@ void FireComponent3D::set_fire_collision_layer(int l) {
         return;
     }
     SceneTree * tree = get_tree();
-    for(auto n : tree->get_nodes_in_group("flammable")) {
+    for(auto & n : tree->get_nodes_in_group("flammable")) {
         PhysicsBody3D * body = Object::cast_to<PhysicsBody3D>(n);
         if(body == nullptr) {
             continue;
@@ -642,7 +716,7 @@ void FireComponent3D::set_flammable_collision_layer(int l) {
         return;
     }
     SceneTree * tree = get_tree();
-    for(auto n : tree->get_nodes_in_group("flammable")) {
+    for(auto & n : tree->get_nodes_in_group("flammable")) {
         PhysicsBody3D * body = Object::cast_to<PhysicsBody3D>(n);
         if(body == nullptr) {
             continue;
@@ -655,6 +729,11 @@ void FireComponent3D::set_flammable_collision_layer(int l) {
 int FireComponent3D::get_flammable_collision_layer() const {
     return flammable_collision_layer;
 }
+
+bool FireComponent3D::is_on_fire() const {
+    return _burn_count > 0;
+}
+
 
 void FireComponent3D::_on_ready() {
     _parent = get_parent_node_3d();
@@ -699,12 +778,27 @@ void FireComponent3D::_on_ready() {
     _burn_area_col_inst = memnew(CollisionShape3D);
     _burn_box_ref.instantiate();
     _burn_area_col_inst->set_shape(_burn_box_ref);
+    _burn_area_col_inst->set_debug_color(Color(1.0f,0.0f,0.0f));
     _burn_area->add_child(_burn_area_col_inst);
     _burn_area->set_monitoring(false);
     _burn_area->set_monitorable(false);
     add_child(_burn_area);
     _burn_area->set_global_transform(_parent->get_global_transform());
 
+    // add user signal to parent for inter-object spread
+    Array usrargs;
+    Dictionary dpos;
+    dpos["name"] = "world_pos";
+    dpos["type"] = Variant::VECTOR3;
+    Dictionary ddam;
+    ddam["name"] = "damage";
+    ddam["type"] = Variant::INT;
+    usrargs.push_back(dpos);
+    usrargs.push_back(ddam);
+    _parent->add_user_signal("spread_fire", usrargs);
+    _parent->connect("spread_fire", Callable(this, "apply_fire"));
+
+    // verbose print
     UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_is_convex=", _is_convex);
     UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_local_aabb=", _local_aabb);
     UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_cell_size=", _cell_size);
@@ -712,56 +806,112 @@ void FireComponent3D::_on_ready() {
 
 }
 
-void FireComponent3D::_process(double p_delta) {
-
-}
-
 void FireComponent3D::_on_process(double delta) {
-    if(Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-    
-    // check if should update
-    _dbg_visuals_timer -= delta * 1000.0;
-    bool update_dbg = _dbg_visuals_timer < 0.0;
-    if(update_dbg) {
-        _dbg_visuals_timer = DBG_VISUAL_UPDATE_MS;
-    }
-
-    for (auto it = _grid.begin(); it != _grid.end(); it++) {
-        fire_cell_t & cell = it->second;
-
-        // update debug visuals
-        if(visible_debug && update_dbg) {
-            if(cell.burning) {
-                cell.dbg_mat_ref->set_albedo(DBG_BURN_COLOR);
-            } else if(cell.hitpoints < max_hitpoints) {
-                // float intensity = 1.0f - cell.hitpoints / max_hitpoints;
-                float intensity = (float)cell.hitpoints / max_hitpoints;
-                cell.dbg_mat_ref->set_albedo(Color(1.0f, 0.5f * intensity, 0.0f));
-            } else {
-                cell.dbg_mat_ref->set_albedo(DBG_COLD_COLOR);
-            }
-
-            // TEST COLORS
-            // apply_fire(Vector3(6.0,0,0), 5);
-            // cell.hitpoints -= 5.0f;
-            // cell.hitpoints = Math::clamp<float>(cell.hitpoints, 0.0f, (float)max_hitpoints);
-        }
-
-        // do other stuff
-
-        
-    }
-}
-
-void FireComponent3D::_on_xform_changed() {
-    if(!visible_debug) {
+    if (Engine::get_singleton()->is_editor_hint() || disabled) {
         return;
     }
+
+    const float dt = static_cast<float>(delta);
+
+    bool any_burning = false;
+
+    // -------------------------
+    // PHASE 1: update cell state
+    // -------------------------
+    for (auto &kv : _grid) {
+        Vector3i pos = kv.first;
+        fire_cell_t &cell = kv.second;
+
+        if (cell.burning) {
+            any_burning = true;
+
+            if(!_burn_area->is_monitoring()) {
+                _burn_area->set_monitoring(true);
+                _burn_area->set_monitorable(true);
+            }
+
+            cell.time_left -= dt;
+
+            if (cell.time_left <= 0.0f) {
+                if (is_torch) {
+                    cell.time_left = BURN_TIME_S;
+                } else {
+                    _extinguish_cell(pos);
+                }
+            }
+        } else {
+            if (cell.cooldown > 0.0f) {
+                cell.cooldown = MAX(0.0f, cell.cooldown - dt);
+                // cell.cooldown -= dt;
+            } else {
+                if (cell.hitpoints < max_hitpoints) {
+                    cell.hitpoints = MIN(
+                        (float)max_hitpoints,
+                        cell.hitpoints + (spread_damage * 0.25f) * dt
+                    );
+                }
+            }
+        }
+    }
+
+    // -------------------------
+    // PHASE 2: debug visuals
+    // -------------------------
+    _dbg_visuals_timer -= dt;
+    const bool update_dbg = _dbg_visuals_timer <= 0.0f;
+    if (update_dbg) {
+        _dbg_visuals_timer = DBG_VISUAL_UPDATE_S;
+
+        if (visible_debug) {
+            for (auto &kv : _grid) {
+                fire_cell_t &cell = kv.second;
+
+                if (cell.burning) {
+                    cell.dbg_mat_ref->set_albedo(DBG_BURN_COLOR);
+                } else if (cell.hitpoints < max_hitpoints) {
+                    float intensity = 1.0f - cell.hitpoints / max_hitpoints;
+                    cell.dbg_mat_ref->set_albedo(Color(1.0f, 0.5f * intensity, 0.0f));
+                } else {
+                    cell.dbg_mat_ref->set_albedo(DBG_COLD_COLOR);
+                }
+            }
+
+            // _print_grid();
+        }
+    }
+
+    // -------------------------
+    // PHASE 3: intra-object spread
+    // -------------------------
+    if (any_burning) {
+        for (auto &kv : _grid) {
+            if (!kv.second.burning) {
+                continue;
+            }
+            _intra_spread(kv.first, kv.second, dt);
+        }
+    }
+
+    // -------------------------
+    // PHASE 4: inter-object spread (timer-gated)
+    // -------------------------
+    if (any_burning) {
+        _spread_timer -= dt;
+        if (_spread_timer <= 0.0f) {
+            _spread_timer = spread_interval;
+            _check_inter_spread();
+        }
+    }
+}
+
+
+void FireComponent3D::_on_xform_changed() {
+    // if(!visible_debug) {
+    //     return;
+    // }
     Transform3D glob_xform = get_global_transform();
-    for (auto it = _grid.begin(); it != _grid.end(); it++) {
-        fire_cell_t & cell = it->second;
+    for (auto & it : _grid) {
+        fire_cell_t & cell = it.second;
         if(!cell.dbg_mesh_rid.is_valid()) {
             continue;
         }
@@ -801,3 +951,38 @@ void FireComponent3D::_notification(int p_what) {
             break;
     }
 }
+
+
+// void FireComponent3D::_print_grid() {
+//     UtilityFunctions::print("---- fire grid ---- ", _parent->get_name());
+
+//     for (int y = 0; y < grid_resolution.y; y++) {
+//         UtilityFunctions::prints("y =", y);
+
+//         for (int z = 0; z < grid_resolution.z; z++) {
+//             String line;
+
+//             for (int x = 0; x < grid_resolution.x; x++) {
+//                 Vector3i p(x, y, z);
+//                 auto it = _grid.find(p);
+
+//                 if (it == _grid.end()) {
+//                     line += ' ';   // no cell
+//                     continue;
+//                 }
+
+//                 const fire_cell_t &c = it->second;
+
+//                 if (c.burning) {
+//                     line += 'F';   // burning
+//                 } else if (c.hitpoints < max_hitpoints) {
+//                     line += 'h';   // heating / damaged
+//                 } else {
+//                     line += '.';   // cold
+//                 }
+//             }
+
+//             UtilityFunctions::print(line);
+//         }
+//     }
+// }

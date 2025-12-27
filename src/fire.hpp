@@ -16,9 +16,11 @@
 
 namespace godot {
 
-#define DBG_VISUAL_UPDATE_MS 1000.0
 #define DEFAULT_SPREAD_BUDGET 20
-#define BURN_TIME_MS 4000
+
+#define DBG_VISUAL_UPDATE_S 1.0f
+#define SPREAD_UPDATE_S 1.0f
+#define BURN_TIME_S 4.0f
 
 #define DEFAULT_COL_LAYER   30
 #define DEFAULT_MASK_LAYER  31
@@ -49,10 +51,10 @@ struct Vector3iEq {
 };
 
 typedef struct {
-    int hitpoints;
+    float hitpoints;
     bool burning;
-    int cooldown;
-    int time_left;
+    float cooldown;
+    float time_left;
     Vector3 local_pos;
     Node3D * emitter;
     RID dbg_mesh_rid;
@@ -67,7 +69,6 @@ public:
     FireComponent3D() = default;
     ~FireComponent3D() override = default;
 
-    void _process(double p_delta) override;
     void _notification(int p_what);
 
     void set_torch(bool t);
@@ -75,6 +76,9 @@ public:
 
     void set_visible_debug(bool v);
     bool get_visible_debug() const;
+
+    void set_disabled(bool d);
+    bool get_disabled() const;
 
     void set_max_hp(int h);
     int get_max_hp() const;
@@ -91,6 +95,8 @@ public:
     int get_spread_budget() const;
     void set_spread_budget(int v);
 
+    bool is_on_fire() const;
+
 protected:
     static void _bind_methods();
 
@@ -106,6 +112,7 @@ private:
     
     // exports
     Vector3i grid_resolution = Vector3i(3, 3, 3);
+    bool disabled = false;
     bool is_torch = false;
     bool visible_debug = false;
     int max_hitpoints = 45;
@@ -116,9 +123,11 @@ private:
 
     // internals
     int _last_max_hp = 45;
-    double _dbg_visuals_timer = DBG_VISUAL_UPDATE_MS;
+    float _dbg_visuals_timer = DBG_VISUAL_UPDATE_S;
 
     Node3D * _parent = nullptr;
+    uint32_t _burn_count = 0;
+    float _spread_timer = SPREAD_UPDATE_S;
 
     // grid setup
     std::unordered_map<Vector3i, fire_cell_t, Vector3iHash, Vector3iEq> _grid;
@@ -149,8 +158,11 @@ private:
     void _build_grid();
     void _clear_grid();
     void _cleanup();
-    void _intra_spread(double delta);
+    void _intra_spread(Vector3i pos, fire_cell_t & data, float dt);
+    void _check_inter_spread();
     void _update_burn_area();
+
+    // void _print_grid();
 };
 
 }
