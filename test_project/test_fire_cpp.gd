@@ -7,6 +7,8 @@ func _ready() -> void:
 	pass # Replace with function body.
 
 func _unhandled_input(_event: InputEvent) -> void:
+	if Input.is_action_just_pressed("ui_cancel"):
+		get_tree().quit()
 	if Input.is_action_just_pressed("ui_accept"):
 		var pos:Vector3 = Vector3(randf_range(-10.0,10.0),randf_range(-10.0,10.0),randf_range(-10.0,10.0))
 		var dam:int = randi_range(10,100)

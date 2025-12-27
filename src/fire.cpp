@@ -328,7 +328,23 @@ void FireComponent3D::_ignite_cell(Vector3i cell) {
         emit_signal("ignite", to_global(data.local_pos));
     }
 
-    // TODO setup particle emitter for cell
+    // --- particle emitter ---
+    if (data.emitter == nullptr) {
+        Ref<PackedScene> scene = _get_emitter_scene();
+        if (scene.is_valid()) {
+            // Node *n = scene->instantiate();
+            Node3D *em = Object::cast_to<Node3D>(scene->instantiate());
+            if (em) {
+                em->set_transform(
+                    Transform3D(Basis(), data.local_pos)
+                );
+                add_child(em);
+                data.emitter = em;
+            } else {
+                // n->queue_free();
+            }
+        }
+    }
 
     _update_burn_area();
     
@@ -339,7 +355,11 @@ void FireComponent3D::_extinguish_cell(Vector3i cell) {
         return;
     }
 
-    // TODO teardown particle emitter for cell
+    // --- particle emitter ---
+    if (data.emitter) {
+        data.emitter->queue_free();
+        data.emitter = nullptr;
+    }
     
     data.burning = false;
     data.hitpoints = max_hitpoints;
@@ -371,6 +391,13 @@ void FireComponent3D::_clear_grid() {
         if(cell.dbg_mesh_rid.is_valid()) {
             RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
             cell.dbg_mesh_rid = RID();
+        }
+        if(!is_inside_tree()) {
+            continue;
+        }
+        if(cell.emitter != nullptr) {
+            cell.emitter->queue_free();
+            cell.emitter = nullptr;
         }
         it = _grid.erase(it);
     }
@@ -476,14 +503,14 @@ void FireComponent3D::_intra_spread(Vector3i pos, fire_cell_t & data, float dt) 
 
         fire_cell_t & neighb = _grid[pos+offset];
         if(!neighb.burning && neighb.cooldown <= 0.0f) {
-            UtilityFunctions::prints(
-                "[NEIGH]",
-                "src=", pos,
-                "dst=", pos + offset,
-                "burning=", neighb.burning,
-                "cd=", neighb.cooldown,
-                "hp=", neighb.hitpoints
-            );
+            // UtilityFunctions::prints(
+            //     "[NEIGH]",
+            //     "src=", pos,
+            //     "dst=", pos + offset,
+            //     "burning=", neighb.burning,
+            //     "cd=", neighb.cooldown,
+            //     "hp=", neighb.hitpoints
+            // );
 
             neighb.hitpoints -= spread_damage * dt;
             if(neighb.hitpoints <= 0.0f) {
@@ -792,7 +819,7 @@ void FireComponent3D::_on_ready() {
             "res://gde_test/assets/fire/fire_particles.tscn"
         );
 
-        if (s_default_emitter_scene.is_null()) {
+        if (!s_default_emitter_scene.is_valid()) {
             UtilityFunctions::print(
                 "[FireComponent3D] failed to load default emitter scene"
             );
@@ -841,7 +868,7 @@ void FireComponent3D::_on_ready() {
     _burn_area->set_monitoring(false);
     _burn_area->set_monitorable(false);
     add_child(_burn_area);
-    _burn_area->set_global_transform(_parent->get_global_transform());
+    _burn_area->set_global_transform(get_global_transform());
 
     // add user signal to parent for inter-object spread
     Array usrargs;
