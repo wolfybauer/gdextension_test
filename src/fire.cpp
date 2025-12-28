@@ -830,17 +830,17 @@ void FireComponent3D::_on_ready() {
     }
 
     // lazy load default emitter scene
-    // if (s_default_emitter_scene.is_null()) {
-    //     s_default_emitter_scene = ResourceLoader::get_singleton()->load(
-    //         "res://gde_test/assets/fire/fire_particles.tscn"
-    //     );
+    if (s_default_emitter_scene.is_null()) {
+        s_default_emitter_scene = ResourceLoader::get_singleton()->load(
+            "res://gde_test/assets/fire/fire_particles.tscn"
+        );
 
-    //     if (!s_default_emitter_scene.is_valid()) {
-    //         UtilityFunctions::print(
-    //             "[FireComponent3D] failed to load default emitter scene"
-    //         );
-    //     }
-    // }
+        if (!s_default_emitter_scene.is_valid()) {
+            UtilityFunctions::print(
+                "[FireComponent3D] failed to load default emitter scene"
+            );
+        }
+    }
 
     // find the CollisionShape3D
     for(Object * child : _parent->get_children()) {
