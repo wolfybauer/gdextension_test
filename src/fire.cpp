@@ -392,9 +392,10 @@ void FireComponent3D::_clear_grid() {
             RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
             cell.dbg_mesh_rid = RID();
         }
-        if(!is_inside_tree()) {
-            continue;
-        }
+        // if(!is_inside_tree()) {
+        //     ++it;
+        //     continue;
+        // }
         if(cell.emitter != nullptr) {
             cell.emitter->queue_free();
             cell.emitter = nullptr;
@@ -646,12 +647,27 @@ void FireComponent3D::_bind_methods() {
 }
 
 
+// Ref<PackedScene> FireComponent3D::_get_emitter_scene() const {
+//     if (_override_emitter_scene.is_valid()) {
+//         return _override_emitter_scene;
+//     }
+//     return s_default_emitter_scene;
+// }
+
 Ref<PackedScene> FireComponent3D::_get_emitter_scene() const {
     if (_override_emitter_scene.is_valid()) {
         return _override_emitter_scene;
     }
+
+    if (s_default_emitter_scene.is_null()) {
+        s_default_emitter_scene = ResourceLoader::get_singleton()->load(
+            "res://gde_test/assets/fire/fire_particles.tscn"
+        );
+    }
+
     return s_default_emitter_scene;
 }
+
 
 void FireComponent3D::set_default_emitter(const Ref<PackedScene> &scene) {
     s_default_emitter_scene = scene;
@@ -814,17 +830,17 @@ void FireComponent3D::_on_ready() {
     }
 
     // lazy load default emitter scene
-    if (s_default_emitter_scene.is_null()) {
-        s_default_emitter_scene = ResourceLoader::get_singleton()->load(
-            "res://gde_test/assets/fire/fire_particles.tscn"
-        );
+    // if (s_default_emitter_scene.is_null()) {
+    //     s_default_emitter_scene = ResourceLoader::get_singleton()->load(
+    //         "res://gde_test/assets/fire/fire_particles.tscn"
+    //     );
 
-        if (!s_default_emitter_scene.is_valid()) {
-            UtilityFunctions::print(
-                "[FireComponent3D] failed to load default emitter scene"
-            );
-        }
-    }
+    //     if (!s_default_emitter_scene.is_valid()) {
+    //         UtilityFunctions::print(
+    //             "[FireComponent3D] failed to load default emitter scene"
+    //         );
+    //     }
+    // }
 
     // find the CollisionShape3D
     for(Object * child : _parent->get_children()) {
@@ -927,7 +943,6 @@ void FireComponent3D::_on_process(double delta) {
         } else {
             if (cell.cooldown > 0.0f) {
                 cell.cooldown = MAX(0.0f, cell.cooldown - dt);
-                // cell.cooldown -= dt;
             } else {
                 if (cell.hitpoints < max_hitpoints) {
                     cell.hitpoints = MIN(
@@ -960,8 +975,6 @@ void FireComponent3D::_on_process(double delta) {
                     cell.dbg_mat_ref->set_albedo(DBG_COLD_COLOR);
                 }
             }
-
-            // _print_grid();
         }
     }
 
@@ -1007,6 +1020,19 @@ void FireComponent3D::_on_xform_changed() {
     }
 }
 
+void FireComponent3D::_shutdown_static_resources() {
+    static bool done = false;
+    if(done) {
+        return;
+    }
+    if (s_default_emitter_scene.is_valid()) {
+        UtilityFunctions::print("[Enflame] clearing static emitter scene");
+        s_default_emitter_scene.unref();
+    }
+    done = true;
+}
+
+
 void FireComponent3D::_notification(int p_what) {
 
     // UtilityFunctions::prints("[Enflame]", "_notification=", p_what, "processing=", is_processing());
@@ -1015,11 +1041,28 @@ void FireComponent3D::_notification(int p_what) {
             _on_ready();
             break;
         }
+        
+        case NOTIFICATION_EXIT_WORLD: {
+            break;
+        }
 
-        case NOTIFICATION_PREDELETE: {
+        case NOTIFICATION_EXIT_TREE: {
+            if (_parent && _parent->is_connected("spread_fire", Callable(this, "apply_fire"))) {
+                _parent->disconnect("spread_fire", Callable(this, "apply_fire"));
+            }
+
+            _shutdown_static_resources();
+
+            set_notify_transform(false);
+            set_process(false);
             _clear_grid();
             break;
         }
+
+        case NOTIFICATION_PREDELETE: {
+            break;
+        }
+
 
         case NOTIFICATION_TRANSFORM_CHANGED: {
             _on_xform_changed();
@@ -1027,7 +1070,6 @@ void FireComponent3D::_notification(int p_what) {
         }
 
         case NOTIFICATION_PROCESS: {
-            // UtilityFunctions::prints("[Enflame]", "_notification=", "NOTIFICATION_PROCESS", "processing=", is_processing());
             _on_process(get_process_delta_time());
             break;
         }

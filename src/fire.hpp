@@ -20,7 +20,7 @@ namespace godot {
 #define DEFAULT_SPREAD_BUDGET 20
 
 #define DBG_VISUAL_UPDATE_S 1.0f
-#define SPREAD_UPDATE_S 1.0f
+#define SPREAD_UPDATE_S 0.5f
 #define BURN_TIME_S 4.0f
 
 #define DEFAULT_COL_LAYER   30
@@ -69,6 +69,9 @@ class FireComponent3D : public Node3D {
 public:
     FireComponent3D() = default;
     ~FireComponent3D() override = default;
+    // ~FireComponent3D() {
+    //     _grid.clear();
+    // }
 
     void _notification(int p_what);
 
@@ -132,7 +135,7 @@ private:
 
     int spread_damage = 10;
     float spread_margin = 0.7f;
-    float spread_interval = 0.5f;
+    float spread_interval = SPREAD_UPDATE_S;
 
     // internals
     int _last_max_hp = 45;
@@ -175,6 +178,8 @@ private:
     void _check_inter_spread();
     void _update_burn_area();
     Ref<PackedScene> _get_emitter_scene() const;
+
+    static void _shutdown_static_resources();
 
 };
 

@@ -53,7 +53,7 @@ size = Vector3(20, 0, 20)
 material = SubResource("StandardMaterial3D_hbvx4")
 
 [node name="BoxCPP_texture" type="RigidBody3D" parent="."]
-transform = Transform3D(0.69216835, -0.7217361, 0, 0.7217361, 0.69216835, 0, 0, 0, 1, 0.29231167, 1.9293342, -3.8068414)
+transform = Transform3D(0.69216835, -0.7217361, 0, 0.7217361, 0.69216835, 0, 0, 0, 1, 0.29231167, 1.9293342, 0.9774785)
 collision_layer = 536870913
 collision_mask = 1073741825
 
@@ -72,7 +72,7 @@ static/default_emitter = ExtResource("5_gnr80")
 visible_debug = true
 
 [node name="FakeConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.702327, 0.71185446, 0, -0.71185446, 0.702327, 0.4537573, 2.9341006, -3.8106158)
+transform = Transform3D(1, 0, 0, 0, 0.702327, 0.71185446, 0, -0.71185446, 0.702327, 0.4537573, 2.9341006, 0.9737041)
 collision_layer = 536870913
 collision_mask = 1073741825
 
@@ -91,7 +91,7 @@ static/default_emitter = ExtResource("5_gnr80")
 visible_debug = true
 
 [node name="RealConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(0.8852558, -0.4644056, 0.025492735, -0.07026386, -0.18771714, -0.97970676, 0.45976675, 0.86549973, -0.19880858, 1.638458, 7.800422, -4.278052)
+transform = Transform3D(0.8852558, -0.4644056, 0.025492735, -0.07026386, -0.18771714, -0.97970676, 0.45976675, 0.86549973, -0.19880858, 1.638458, 7.800422, 0.506268)
 collision_layer = 536870913
 collision_mask = 1073741825
 
