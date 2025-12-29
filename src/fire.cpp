@@ -588,11 +588,40 @@ void FireComponent3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_override_emitter", "scene"), &FireComponent3D::set_override_emitter);
     ClassDB::bind_method(D_METHOD("get_override_emitter"), &FireComponent3D::get_override_emitter);
 
+    
+    ClassDB::bind_method(D_METHOD("set_spread_margin", "m"), &FireComponent3D::set_spread_margin);
+    ClassDB::bind_method(D_METHOD("get_spread_margin"), &FireComponent3D::get_spread_margin);
+    
+    ClassDB::bind_method(D_METHOD("set_spread_damage", "d"), &FireComponent3D::set_spread_damage);
+    ClassDB::bind_method(D_METHOD("get_spread_damage"), &FireComponent3D::get_spread_damage);
+    
     // ADD_PROPERTY(
     //     PropertyInfo(Variant::OBJECT, "static/default_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
     //     "set_default_emitter",
     //     "get_default_emitter"
     // );
+
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::FLOAT,
+            "spread_margin",
+            PROPERTY_HINT_RANGE,
+            "0.0,5.0,0.01"
+        ),
+        "set_spread_margin",
+        "get_spread_margin"
+    );
+
+    ADD_PROPERTY(
+    PropertyInfo(
+        Variant::INT,
+        "spread_damage",
+        PROPERTY_HINT_RANGE,
+        "0,1000,1"
+    ),
+    "set_spread_damage",
+    "get_spread_damage"
+);
 
     ADD_PROPERTY(
         PropertyInfo(Variant::OBJECT, "override_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
@@ -722,6 +751,27 @@ void FireComponent3D::set_disabled(bool d) {
 bool FireComponent3D::get_disabled() const {
     return disabled;
 }
+
+void FireComponent3D::set_spread_damage(int d) {
+    spread_damage = MAX(0, d);
+}
+
+int FireComponent3D::get_spread_damage() const {
+    return spread_damage;
+}
+
+void FireComponent3D::set_spread_margin(float m) {
+    spread_margin = MAX(0.0f, m);
+
+    if (is_inside_tree() && _burn_count > 0) {
+        _update_burn_area();
+    }
+}
+
+float FireComponent3D::get_spread_margin() const {
+    return spread_margin;
+}
+
 
 void FireComponent3D::set_max_hp(int h) {
     max_hitpoints = h;

@@ -70,5 +70,6 @@ mesh = SubResource("CylinderMesh_naox4")
 shape = SubResource("ConvexPolygonShape3D_u3ega")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="RealConvex"]
+spread_margin = 0.0
 
 [node name="DestronoiNode" type="DestronoiNode" parent="RealConvex"]

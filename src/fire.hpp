@@ -17,7 +17,7 @@
 
 namespace godot {
 
-#define DEFAULT_SPREAD_BUDGET 20
+#define DEFAULT_SPREAD_BUDGET 200
 
 #define DBG_VISUAL_UPDATE_S 1.0f
 #define SPREAD_UPDATE_S 0.5f
@@ -84,6 +84,12 @@ public:
 
     void set_max_hp(int h);
     int get_max_hp() const;
+
+    void set_spread_margin(float m);
+    float get_spread_margin() const;
+
+    void set_spread_damage(int d);
+    int get_spread_damage() const;
 
     void set_fire_collision_layer(int l);
     int get_fire_collision_layer() const;
