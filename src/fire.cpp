@@ -4,8 +4,9 @@
 // #include "godot_cpp/classes/base_material3d.hpp"
 #include "godot_cpp/classes/box_shape3d.hpp"
 #include "godot_cpp/classes/engine.hpp"
-#include "godot_cpp/classes/fast_noise_lite.hpp"
+// #include "godot_cpp/classes/fast_noise_lite.hpp"
 #include "godot_cpp/classes/node3d.hpp"
+#include "godot_cpp/classes/packed_scene.hpp"
 #include "godot_cpp/classes/physics_body3d.hpp"
 // #include "godot_cpp/classes/random_number_generator.hpp"
 #include "godot_cpp/classes/rendering_server.hpp"
@@ -42,7 +43,6 @@ int FireComponent3D::s_spread_budget = DEFAULT_SPREAD_BUDGET;
 int FireComponent3D::s_max_spread = DEFAULT_SPREAD_BUDGET;
 int FireComponent3D::s_fire_collision_layer = DEFAULT_COL_LAYER;
 int FireComponent3D::s_flammable_collision_layer = DEFAULT_MASK_LAYER;
-Ref<PackedScene> FireComponent3D::s_default_emitter_scene;
 
 const Color DBG_COLD_COLOR = Color(0.5f, 0.5f, 0.5f);
 const Color DBG_BURN_COLOR = Color(0.1f, 0.0f, 0.0f);
@@ -392,6 +392,8 @@ void FireComponent3D::_clear_grid() {
             RenderingServer::get_singleton()->free_rid(cell.dbg_mesh_rid);
             cell.dbg_mesh_rid = RID();
         }
+        cell.dbg_mesh_ref.unref();
+        cell.dbg_mat_ref.unref();
         // if(!is_inside_tree()) {
         //     ++it;
         //     continue;
@@ -529,7 +531,9 @@ void FireComponent3D::_check_inter_spread() {
     Vector3 pos = _burn_area->get_global_transform().origin;
     int dmg = (int)(spread_damage * _burn_count * 0.5f);
 
+
     emit_signal("damage", dmg);
+    // UtilityFunctions::prints("[Enflame] DMG!", _parent->get_name(), dmg);
 
     for(auto &n : _burn_area->get_overlapping_bodies()) {
         Node3D * body = Object::cast_to<Node3D>(n);
@@ -579,17 +583,17 @@ void FireComponent3D::_bind_methods() {
 	
     ClassDB::bind_method(D_METHOD("apply_fire"), &FireComponent3D::apply_fire);
 
-    ClassDB::bind_method(D_METHOD("set_default_emitter", "scene"), &FireComponent3D::set_default_emitter);
-    ClassDB::bind_method(D_METHOD("get_default_emitter"), &FireComponent3D::get_default_emitter);
+    // ClassDB::bind_method(D_METHOD("set_default_emitter", "scene"), &FireComponent3D::set_default_emitter);
+    // ClassDB::bind_method(D_METHOD("get_default_emitter"), &FireComponent3D::get_default_emitter);
 
     ClassDB::bind_method(D_METHOD("set_override_emitter", "scene"), &FireComponent3D::set_override_emitter);
     ClassDB::bind_method(D_METHOD("get_override_emitter"), &FireComponent3D::get_override_emitter);
 
-    ADD_PROPERTY(
-        PropertyInfo(Variant::OBJECT, "static/default_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
-        "set_default_emitter",
-        "get_default_emitter"
-    );
+    // ADD_PROPERTY(
+    //     PropertyInfo(Variant::OBJECT, "static/default_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
+    //     "set_default_emitter",
+    //     "get_default_emitter"
+    // );
 
     ADD_PROPERTY(
         PropertyInfo(Variant::OBJECT, "override_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
@@ -646,35 +650,15 @@ void FireComponent3D::_bind_methods() {
     );
 }
 
-
-// Ref<PackedScene> FireComponent3D::_get_emitter_scene() const {
-//     if (_override_emitter_scene.is_valid()) {
-//         return _override_emitter_scene;
-//     }
-//     return s_default_emitter_scene;
-// }
-
-Ref<PackedScene> FireComponent3D::_get_emitter_scene() const {
+Ref<PackedScene> FireComponent3D::_get_emitter_scene() {
     if (_override_emitter_scene.is_valid()) {
         return _override_emitter_scene;
     }
-
-    if (s_default_emitter_scene.is_null()) {
-        s_default_emitter_scene = ResourceLoader::get_singleton()->load(
-            "res://gde_test/assets/fire/fire_particles.tscn"
-        );
+    if(!_emitter_scene.is_valid()) {
+        _emitter_scene = ResourceLoader::get_singleton()->load(
+            DEFAULT_FIRE_EMITTER_PATH);
     }
-
-    return s_default_emitter_scene;
-}
-
-
-void FireComponent3D::set_default_emitter(const Ref<PackedScene> &scene) {
-    s_default_emitter_scene = scene;
-}
-
-Ref<PackedScene> FireComponent3D::get_default_emitter() const {
-    return s_default_emitter_scene;
+    return _emitter_scene;
 }
 
 void FireComponent3D::set_override_emitter(const Ref<PackedScene> &scene) {
@@ -827,19 +811,6 @@ void FireComponent3D::_on_ready() {
     _parent = get_parent_node_3d();
 	if (!_parent) {
 		return;
-    }
-
-    // lazy load default emitter scene
-    if (s_default_emitter_scene.is_null()) {
-        s_default_emitter_scene = ResourceLoader::get_singleton()->load(
-            "res://gde_test/assets/fire/fire_particles.tscn"
-        );
-
-        if (!s_default_emitter_scene.is_valid()) {
-            UtilityFunctions::print(
-                "[FireComponent3D] failed to load default emitter scene"
-            );
-        }
     }
 
     // find the CollisionShape3D
@@ -1020,18 +991,6 @@ void FireComponent3D::_on_xform_changed() {
     }
 }
 
-void FireComponent3D::_shutdown_static_resources() {
-    static bool done = false;
-    if(done) {
-        return;
-    }
-    if (s_default_emitter_scene.is_valid()) {
-        UtilityFunctions::print("[Enflame] clearing static emitter scene");
-        s_default_emitter_scene.unref();
-    }
-    done = true;
-}
-
 
 void FireComponent3D::_notification(int p_what) {
 
@@ -1046,20 +1005,19 @@ void FireComponent3D::_notification(int p_what) {
             break;
         }
 
-        case NOTIFICATION_EXIT_TREE: {
+        case NOTIFICATION_PREDELETE: {
+            set_process(false);
+            set_notify_transform(false);
+
+            // hard-disable first
+            disabled = true;
+
+            // disconnect safely
             if (_parent && _parent->is_connected("spread_fire", Callable(this, "apply_fire"))) {
                 _parent->disconnect("spread_fire", Callable(this, "apply_fire"));
             }
 
-            _shutdown_static_resources();
-
-            set_notify_transform(false);
-            set_process(false);
-            _clear_grid();
-            break;
-        }
-
-        case NOTIFICATION_PREDELETE: {
+            _cleanup();
             break;
         }
 

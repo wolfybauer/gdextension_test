@@ -1,5 +1,6 @@
 #include "destronoi.hpp"
 #include "godot_cpp/classes/physics_server3d.hpp"
+#include "godot_cpp/classes/primitive_mesh.hpp"
 #include "godot_cpp/classes/rendering_server.hpp"
 #include "godot_cpp/classes/world3d.hpp"
 #include "godot_cpp/variant/basis.hpp"
@@ -65,7 +66,7 @@ void DestronoiNode::_bind_methods() {
         "get_persistence");
 
     ADD_PROPERTY(
-        PropertyInfo(Variant::BOOL, "tangible_shards", PROPERTY_HINT_RESOURCE_TYPE, "bool"),
+        PropertyInfo(Variant::BOOL, "tangible_shards"),
         "set_tangible_shards",
         "get_tangible_shards"
     );
@@ -161,54 +162,146 @@ static void _emit_intersection(Ref<SurfaceTool> st, Ref<MeshDataTool> data, cons
 	st->add_vertex(n->p);
 }
 
-static void _plot_sites_random(Ref<MeshDataTool> mdt, VSTNode * node, Ref<RandomNumberGenerator> rng) {
-	node->_sites.clear();
+// static inline bool _point_inside_convex(
+//         const Vector3 &p,
+//         const Vector<Plane> &planes,
+//         float eps = 0.00001f) {
+
+//     for (int i = 0; i < planes.size(); i++) {
+//         if (planes[i].distance_to(p) > eps) {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
+
+
+// static void _plot_sites_random(Ref<MeshDataTool> mdt, VSTNode * node, Ref<RandomNumberGenerator> rng) {
+// 	if(node->_mesh_ref.is_null()) {
+//         return;
+//     }
+    
+//     node->_sites.clear();
+
+//     mdt->clear();
+// 	mdt->create_from_surface(node->_mesh_ref, 0);
+
+// 	AABB aabb = node->_mesh_ref->get_aabb();
+// 	Vector3 min_vec = aabb.position;
+// 	Vector3 max_vec = aabb.get_end();
+
+// 	float avg_x = 0.5f * (max_vec.x + min_vec.x);
+// 	float avg_y = 0.5f * (max_vec.y + min_vec.y);
+// 	float avg_z = 0.5f * (max_vec.z + min_vec.z);
+
+// 	float dev = 0.1f; // put this on a noise texture?
+
+// 	while (node->_sites.size() < 2) {
+// 		Vector3 site(
+// 				rng->randfn(avg_x, dev),
+// 				rng->randfn(avg_y, dev),
+// 				rng->randfn(avg_z, dev));
+
+// 		int num_intersections = 0;
+
+// 		for (int tri = 0; tri < mdt->get_face_count(); tri++) {
+// 			int v0 = mdt->get_face_vertex(tri, 0);
+// 			int v1 = mdt->get_face_vertex(tri, 1);
+// 			int v2 = mdt->get_face_vertex(tri, 2);
+
+// 			Vector3 a = mdt->get_vertex(v0);
+// 			Vector3 b = mdt->get_vertex(v1);
+// 			Vector3 c = mdt->get_vertex(v2);
+
+// 			Variant hit = Geometry3D::get_singleton()->ray_intersects_triangle(site, Vector3(0, 1, 0), a, b, c);
+
+// 			if (hit.get_type() != Variant::NIL) {
+// 				num_intersections++;
+// 			}
+// 		}
+
+// 		if (num_intersections == 1) {
+// 			node->_sites.push_back(site);
+//         }
+// 	}
+// }
+
+static void _plot_sites_random(
+        Ref<MeshDataTool> mdt,
+        VSTNode *node,
+        Ref<RandomNumberGenerator> rng) {
+
+    if (node->_mesh_ref.is_null()) {
+        return;
+    }
+
+    node->_sites.clear();
 
     mdt->clear();
-	mdt->create_from_surface(node->_mesh_ref, 0);
+    mdt->create_from_surface(node->_mesh_ref, 0);
 
-	AABB aabb = node->_mesh_ref->get_aabb();
-	Vector3 min_vec = aabb.position;
-	Vector3 max_vec = aabb.get_end();
+    AABB aabb = node->_mesh_ref->get_aabb();
+    Vector3 min_vec = aabb.position;
+    Vector3 max_vec = aabb.get_end();
 
-	float avg_x = 0.5f * (max_vec.x + min_vec.x);
-	float avg_y = 0.5f * (max_vec.y + min_vec.y);
-	float avg_z = 0.5f * (max_vec.z + min_vec.z);
+    float avg_x = 0.5f * (max_vec.x + min_vec.x);
+    float avg_y = 0.5f * (max_vec.y + min_vec.y);
+    float avg_z = 0.5f * (max_vec.z + min_vec.z);
 
-	float dev = 0.1f; // put this on a noise texture?
+    float dev = 0.1f;
 
-	while (node->_sites.size() < 2) {
-		Vector3 site(
-				rng->randfn(avg_x, dev),
-				rng->randfn(avg_y, dev),
-				rng->randfn(avg_z, dev));
+    const int MAX_ATTEMPTS = 256;
+    int attempts = 0;
 
-		int num_intersections = 0;
+    while (node->_sites.size() < 2 && attempts < MAX_ATTEMPTS) {
+        attempts++;
 
-		for (int tri = 0; tri < mdt->get_face_count(); tri++) {
-			int v0 = mdt->get_face_vertex(tri, 0);
-			int v1 = mdt->get_face_vertex(tri, 1);
-			int v2 = mdt->get_face_vertex(tri, 2);
+        Vector3 site(
+            rng->randfn(avg_x, dev),
+            rng->randfn(avg_y, dev),
+            rng->randfn(avg_z, dev)
+        );
 
-			Vector3 a = mdt->get_vertex(v0);
-			Vector3 b = mdt->get_vertex(v1);
-			Vector3 c = mdt->get_vertex(v2);
+        int num_intersections = 0;
 
-			Variant hit = Geometry3D::get_singleton()->ray_intersects_triangle(site, Vector3(0, 1, 0), a, b, c);
+        for (int tri = 0; tri < mdt->get_face_count(); tri++) {
+            int v0 = mdt->get_face_vertex(tri, 0);
+            int v1 = mdt->get_face_vertex(tri, 1);
+            int v2 = mdt->get_face_vertex(tri, 2);
 
-			if (hit.get_type() != Variant::NIL) {
-				num_intersections++;
-			}
-		}
+            Vector3 a = mdt->get_vertex(v0);
+            Vector3 b = mdt->get_vertex(v1);
+            Vector3 c = mdt->get_vertex(v2);
 
-		if (num_intersections == 1) {
-			node->_sites.push_back(site);
+            Variant hit = Geometry3D::get_singleton()->ray_intersects_triangle(
+                site, Vector3(0, 1, 0), a, b, c
+            );
+
+            if (hit.get_type() != Variant::NIL) {
+                num_intersections++;
+            }
         }
-	}
+
+        if (num_intersections == 1) {
+            node->_sites.push_back(site);
+        }
+    }
+
+    // hard fallback: guarantee progress
+    if (node->_sites.size() < 2) {
+        Vector3 c = aabb.get_center();
+        node->_sites.clear();
+        node->_sites.push_back(c + Vector3(0.01f, 0, 0));
+        node->_sites.push_back(c - Vector3(0.01f, 0, 0));
+    }
 }
+
 
 bool DestronoiNode::_bisect(Ref<SurfaceTool> sta, Ref<SurfaceTool> stb,
         Ref<MeshDataTool> data_tool, VSTNode * vst_node) {
+    if(vst_node->_mesh_ref.is_null()) {
+        return false;
+    }
     // _bisection aborted! Must have exactly 2 sites
     if (vst_node->get_site_count() != 2) {
         return false;
@@ -433,6 +526,12 @@ bool DestronoiNode::_bisect(Ref<SurfaceTool> sta, Ref<SurfaceTool> stb,
             centroid += coplanar_vertices[i];
         }
         centroid /= coplanar_vertices.size();
+        // if (coplanar_vertices.is_empty()) {
+        //     continue; // or skip cap generation entirely
+        // }
+
+        centroid /= (float)coplanar_vertices.size();
+
 
         for (int i = 0; i < coplanar_vertices.size() - 1; i++) {
             if (i % 2 != 0) continue;
@@ -475,7 +574,7 @@ bool DestronoiNode::_bisect(Ref<SurfaceTool> sta, Ref<SurfaceTool> stb,
     return true;
 }
 
-void DestronoiNode::_ready() {
+void DestronoiNode::_on_ready() {
 
     if(Engine::get_singleton()->is_editor_hint()) {
 		return;
@@ -487,10 +586,8 @@ void DestronoiNode::_ready() {
     }
 
     Ref<RandomNumberGenerator> rng;
-    if(rng.is_null()) {
-        rng.instantiate();
-        rng->randomize();
-    }
+    rng.instantiate();
+    rng->randomize();
 
 	MeshInstance3D *mesh_instance = nullptr;
 
@@ -512,8 +609,25 @@ void DestronoiNode::_ready() {
     //     inner_material = outer_material;
     // }
 
+
+    UtilityFunctions::print("[Destronoi] GOT HERE, EXPECTING THIS TO MAYBE HANG");
+    Ref<Mesh> mm = mesh_instance->get_mesh();
+    Ref<ArrayMesh> am = mm;
+    if(am.is_null()) {
+        Ref<PrimitiveMesh> pm = mm;
+        if(pm.is_null()) {
+    		UtilityFunctions::print("[Destronoi] UNSUPPORTED MESH TYPE. USE ARRAYMESH OR PRIMITIVE");
+            return;
+        }
+        Array ar = pm->get_mesh_arrays();
+        am.instantiate(); 
+        am->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, ar);
+    }
+    // UtilityFunctions::print("[Destronoi] PAST HANGY PART");
+
+
     // UtilityFunctions::print("[Destronoi] allocating root");
-    _root = memnew(VSTNode(mesh_instance->get_mesh(),
+    _root = memnew(VSTNode(am,
                         mesh_instance->get_active_material(0)));
 
     Ref<MeshDataTool> mdt;
@@ -527,6 +641,7 @@ void DestronoiNode::_ready() {
 
 
 	_plot_sites_random(mdt, _root, rng);
+    
     // UtilityFunctions::print("[Destronoi] first plot ok");
 	// _bisect(sta, stb, mdt, _root, outer_material, inner_material);
 	_bisect(sta, stb, mdt, _root);
@@ -543,6 +658,7 @@ void DestronoiNode::_ready() {
 		}
 	}
     // UtilityFunctions::print("[Destronoi] bisect done");
+    UtilityFunctions::print("[Destronoi] _ON_READY OK");
 
 }
 
@@ -701,7 +817,7 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
             new_body->set_collision_layer(0);
         }
         add_child(new_body);
-        new_body->set_global_position(base_xform.origin);
+        new_body->set_global_transform(base_xform);
         for(StringName g : pgroups) {
             new_body->add_to_group(g);
         }
@@ -713,8 +829,11 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
     base_object->queue_free();
 
     // delete vst tree, original rigidbody
-    _root->free_tree();
-    memdelete(_root);
+    // if(_root) {
+    //     _root->free_tree();
+    //     memdelete(_root);
+    //     _root = nullptr;
+    // }
 
     if(!(persistence > 0.0f)) {
         return;
@@ -723,3 +842,23 @@ void DestronoiNode::destroy(float radial_velocity, Vector3 linear_velocity) {
     tm->connect("timeout", Callable(this, "_cleanup"));
 }
 
+void DestronoiNode::_notification(int p_what) {
+    switch (p_what) {
+		case NOTIFICATION_READY: {
+            _on_ready();
+            break;
+        }
+
+        case NOTIFICATION_EXIT_TREE: {
+            if(_root) {
+                _root->free_tree();
+                memdelete(_root);
+                _root = nullptr;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+}

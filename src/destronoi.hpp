@@ -21,6 +21,7 @@ class DestronoiNode : public Node {
 public:
     DestronoiNode() = default;
     ~DestronoiNode() override = default;
+    void _notification(int p_what);
 
     void set_granularity(int h);
     int get_granularity() const;
@@ -38,18 +39,17 @@ public:
                 Vector3 linear_velocity = Vector3());
     void _cleanup();
 
-    void _ready() override;
-
 protected:
     static void _bind_methods();
 
 private:
+    void _on_ready();
     bool _bisect(Ref<SurfaceTool> sta, Ref<SurfaceTool> stb,
         Ref<MeshDataTool> data_tool, VSTNode * vst_node);
     int granularity = 5;                 // @export_range(1,8)
     float persistence = 1.0f;
     bool tangible_shards = false;
-    VSTNode * _root;            // root of the VST
+    VSTNode * _root = nullptr;            // root of the VST
     Ref<Material> inner_material;
 };
 

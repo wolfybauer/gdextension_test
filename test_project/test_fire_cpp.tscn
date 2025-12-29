@@ -1,41 +1,23 @@
-[gd_scene load_steps=13 format=4 uid="uid://blkpvcwih8j7w"]
+[gd_scene load_steps=9 format=3 uid="uid://blkpvcwih8j7w"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_pfxp3"]
 [ext_resource type="Script" uid="uid://u25egtqimtef" path="res://test_fire_cpp.gd" id="1_u3ega"]
-[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://woodcrate.jpg" id="2_u3ega"]
-[ext_resource type="Script" uid="uid://dn43dxgvybmo5" path="res://name_label.gd" id="3_gnr80"]
-[ext_resource type="PackedScene" uid="uid://dffp0al8suupe" path="res://gde_test/assets/fire/fire_particles.tscn" id="5_gnr80"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hbvx4"]
 albedo_texture = ExtResource("1_pfxp3")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lquwl"]
-albedo_texture = ExtResource("2_u3ega")
+[sub_resource type="BoxMesh" id="BoxMesh_hbvx4"]
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_3ylfg"]
-_surfaces = [{
-"aabb": AABB(-0.5, -0.5, -0.5, 1, 1, 1),
-"attribute_data": PackedByteArray("AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/"),
-"format": 34359738391,
-"material": SubResource("StandardMaterial3D_lquwl"),
-"primitive": 3,
-"uv_scale": Vector4(0, 0, 0, 0),
-"vertex_count": 36,
-"vertex_data": PackedByteArray("AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAL8AAAC/AAAAvwAAAL8AAAA/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAA/AAAAvwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAC/AAAAPwAAAL8AAAC/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//38AAP//AAD/fwAA//8AAP9/AAD//wAA/////wAA/z//////AAD/P/////8AAP8/AAD/f/9//n8AAP9//3/+fwAA/3//f/5//3//fwAA/z//f/9/AAD/P/9//38AAP8//3//////AAD/f/////8AAP9//////wAA/38AAP//AAD/fwAA//8AAP9/AAD//wAA/3//fwAA/z//f/9/AAD/P/9//38AAP8/////f/9//n////9//3/+f////3//f/5//////wAA/z//////AAD/P/////8AAP8//3//////AAD/f/////8AAP9//////wAA////f/9//n////9//3/+f////3//f/5/")
-}]
+[sub_resource type="BoxShape3D" id="BoxShape3D_naox4"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_ea2hs"]
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_naox4"]
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_hbvx4"]
 points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_gnr80"]
+[sub_resource type="CylinderMesh" id="CylinderMesh_naox4"]
 top_radius = 0.05
-bottom_radius = 2.0
-height = 5.0
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_p2wxh"]
-points = PackedVector3Array(1.6971576, -2.3321106, -0.9267962, -1.8979869, -2.361147, -0.42155182, -1.9126104, -2.3794916, 0.3925866, 0.091321886, 2.2971637, 0.091322, 0.53862286, -2.3672576, 1.8711122, -0.42188448, -2.360938, -1.8978206, 1.7905592, -2.3590307, 0.75794417, -0.9267883, -2.33209, 1.6971425, -0.051555384, 2.2863455, -0.122919925, 0.98181903, -2.3643827, -1.6788161, -1.4372014, -2.332392, -1.2916107, 1.889961, -2.3909025, -0.50128603, -1.578713, -2.3257806, 1.1107075, 1.2126487, -2.0358565, 1.352851, -0.12089793, 2.2431548, 0.08880182, -0.5016164, -2.3906918, 1.8897929, 0.3929212, -2.3792784, -1.9124407, 0.08880193, 2.243159, -0.12089803, 1.7299149, -1.8526394, 0.23316957, -0.99740624, -2.3269508, -1.6524879, 1.5860443, -2.3839319, 1.1388767, 1.287028, -2.3820517, -1.4674646, -0.05167687, -1.2907524, 1.5258391, -1.7359798, -2.3417435, -0.8574718, -0.12291961, 2.2863364, -0.051555138, 0.23510632, 2.0103445, -0.05172715, 1.0447551, -2.3404248, 1.630219, -1.1751314, -2.1079423, 1.4247793, -0.051727828, 2.0103762, 0.2351104, -1.8161114, -2.3509424, 0.6815497, -0.051539376, -1.3569498, -1.5516646, -1.551662, -1.3569474, -0.05153921)
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_u3ega"]
+points = PackedVector3Array(0.4999565, -1.0158731, -0.19828533, -0.071229726, 1.0158731, 0.055518236, 0.0237287, -0.9840524, 0.53174603, 0.08720523, -0.9206101, -0.5158731, -0.42050445, -1.0158731, 0.34121388, 0.43647996, -0.9522318, 0.30942434, 0.055518236, 1.0158731, -0.071229726, -0.29344884, -1.0158731, -0.45219144, 0.08720523, 0.9840524, 0.055518236, -0.071229726, 0.8887895, -0.10301926, 0.34121388, -0.9840524, -0.42050445, -0.5158731, -0.9522318, -0.1348088, -0.26176184, -0.9522318, 0.46816695, 0.53174603, -0.9840524, 0.0237287, -0.5158731, -0.9840524, 0.1507843, 0.24594782, -0.9206101, 0.46816695, -0.42050445, -0.9206101, -0.32523838, -0.1348088, -0.9522318, -0.5158731, 0.055518236, 0.9840524, 0.08720523, 0.118994765, 0.8253471, -0.071229726, -0.071229726, 0.8253471, 0.118994765, 0.46816695, -0.7619048, 0.1507843, -0.10301926, 0.8887895, -0.071229726, -0.19828533, -1.0158731, 0.4999565, 0.4046904, -0.9522318, -0.35702792, 0.21426083, -0.9206101, -0.48398098, -0.3887149, -0.7619048, 0.30942434, -0.5158731, -0.9206101, 0.08720523, -0.29344884, -0.9522318, -0.45219144, -0.10301926, -0.8569689, 0.4999565, 0.34121388, -0.6982636, 0.34121388, 0.4999565, -0.9206101, -0.16649579)
 
 [node name="Test_FireCPP" type="Node3D"]
 script = ExtResource("1_u3ega")
@@ -52,56 +34,41 @@ use_collision = true
 size = Vector3(20, 0, 20)
 material = SubResource("StandardMaterial3D_hbvx4")
 
-[node name="BoxCPP_texture" type="RigidBody3D" parent="."]
-transform = Transform3D(0.69216835, -0.7217361, 0, 0.7217361, 0.69216835, 0, 0, 0, 1, 0.29231167, 1.9293342, 0.9774785)
-collision_layer = 536870913
-collision_mask = 1073741825
+[node name="Primitive" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3, 0)
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="BoxCPP_texture"]
-mesh = SubResource("ArrayMesh_3ylfg")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive"]
+mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BoxCPP_texture"]
-shape = SubResource("BoxShape3D_ea2hs")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive"]
+shape = SubResource("BoxShape3D_naox4")
 
-[node name="NameLabel" type="Label3D" parent="BoxCPP_texture"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-script = ExtResource("3_gnr80")
+[node name="FireComponent3D" type="FireComponent3D" parent="Primitive"]
 
-[node name="FireComponent3D" type="FireComponent3D" parent="BoxCPP_texture"]
-static/default_emitter = ExtResource("5_gnr80")
-visible_debug = true
+[node name="DestronoiNode" type="DestronoiNode" parent="Primitive"]
 
 [node name="FakeConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.702327, 0.71185446, 0, -0.71185446, 0.702327, 0.4537573, 2.9341006, 0.9737041)
-collision_layer = 536870913
-collision_mask = 1073741825
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 
-[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="FakeConvex"]
-mesh = SubResource("ArrayMesh_3ylfg")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex"]
+mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="FakeConvex"]
-shape = SubResource("ConvexPolygonShape3D_naox4")
-
-[node name="NameLabel" type="Label3D" parent="FakeConvex"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-script = ExtResource("3_gnr80")
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex"]
+shape = SubResource("ConvexPolygonShape3D_hbvx4")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex"]
-static/default_emitter = ExtResource("5_gnr80")
-visible_debug = true
+
+[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex"]
 
 [node name="RealConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(0.8852558, -0.4644056, 0.025492735, -0.07026386, -0.18771714, -0.97970676, 0.45976675, 0.86549973, -0.19880858, 1.638458, 7.800422, 0.506268)
-collision_layer = 536870913
-collision_mask = 1073741825
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 3, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="RealConvex"]
-mesh = SubResource("CylinderMesh_gnr80")
-skeleton = NodePath("../..")
+mesh = SubResource("CylinderMesh_naox4")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="RealConvex"]
-shape = SubResource("ConvexPolygonShape3D_p2wxh")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RealConvex"]
+shape = SubResource("ConvexPolygonShape3D_u3ega")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="RealConvex"]
-static/default_emitter = ExtResource("5_gnr80")
-visible_debug = true
+
+[node name="DestronoiNode" type="DestronoiNode" parent="RealConvex"]

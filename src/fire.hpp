@@ -26,6 +26,8 @@ namespace godot {
 #define DEFAULT_COL_LAYER   30
 #define DEFAULT_MASK_LAYER  31
 
+#define DEFAULT_FIRE_EMITTER_PATH "res://gde_test/assets/fire/fire_particles.tscn"
+
 
 static inline uint64_t hash_combine(uint64_t h, uint64_t k) {
     k *= 0xff51afd7ed558ccdULL;
@@ -69,10 +71,6 @@ class FireComponent3D : public Node3D {
 public:
     FireComponent3D() = default;
     ~FireComponent3D() override = default;
-    // ~FireComponent3D() {
-    //     _grid.clear();
-    // }
-
     void _notification(int p_what);
 
     void set_torch(bool t);
@@ -101,8 +99,8 @@ public:
 
     bool is_on_fire() const;
 
-    void set_default_emitter(const Ref<PackedScene> &scene);
-    Ref<PackedScene> get_default_emitter() const;
+    // void set_default_emitter(const Ref<PackedScene> &scene);
+    // Ref<PackedScene> get_default_emitter() const;
     void set_override_emitter(const Ref<PackedScene> &scene);
     Ref<PackedScene> get_override_emitter() const;
 
@@ -119,10 +117,10 @@ private:
     static int s_max_spread;
     static int s_fire_collision_layer;
     static int s_flammable_collision_layer;
-    static Ref<PackedScene> s_default_emitter_scene;
 
     // per-instance override
     Ref<PackedScene> _override_emitter_scene;
+    Ref<PackedScene> _emitter_scene;
 
     
     // exports
@@ -177,9 +175,7 @@ private:
     void _intra_spread(Vector3i pos, fire_cell_t & data, float dt);
     void _check_inter_spread();
     void _update_burn_area();
-    Ref<PackedScene> _get_emitter_scene() const;
-
-    static void _shutdown_static_resources();
+    Ref<PackedScene> _get_emitter_scene();
 
 };
 

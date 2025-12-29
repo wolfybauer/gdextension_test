@@ -41,8 +41,12 @@ func _ready():
 		return # no mesh; return early
 	
 	base_material = mesh_instance.get_active_material(0)
+	if base_material == null:
+		base_material = StandardMaterial3D.new()
 
-	_root = VSTNodeGD.new(mesh_instance.mesh, base_material)
+	var am:ArrayMesh = ensure_array_mesh(mesh_instance.mesh)
+
+	_root = VSTNodeGD.new(am, base_material)
 
 	# Plot 2 sites for the subdivision
 	var plot_mdt:MeshDataTool = MeshDataTool.new()
@@ -105,6 +109,20 @@ func _emit_intersection(st:SurfaceTool, data:MeshDataTool, a_id:int, b_id:int, p
 	st.set_tangent(tan)
 	st.set_color(col)
 	st.add_vertex(p)
+
+static func ensure_array_mesh(mesh: Mesh) -> ArrayMesh:
+	if mesh is ArrayMesh:
+		# print('it array!')
+		return mesh
+	# print('not array!')
+
+	# Convert PrimitiveMesh → ArrayMesh
+	var arrays:Array = mesh.get_mesh_arrays()
+	PrimitiveMesh
+	var am := ArrayMesh.new()
+	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return am
+
 
 
 ## Randomly plots a pair of valid sites using rejection sampling. A site is

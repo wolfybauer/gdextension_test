@@ -79,11 +79,13 @@ public:
         if (_left) {
             _left->free_tree();
             memdelete(_left);
+            _left = nullptr;
         }
 
         if (_right) {
             _right->free_tree();
             memdelete(_right);
+            _right = nullptr;
         }
     }
 
