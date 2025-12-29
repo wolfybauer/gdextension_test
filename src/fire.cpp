@@ -158,14 +158,14 @@ static AABB _get_shape_aabb(CollisionShape3D * collision_shape, bool * is_convex
     }
 
     // warn or error
-    UtilityFunctions::print("[Enflame] _get_shape_aabb : CollisionShape3D has no shape");
+    UtilityFunctions::push_error("[Enflame] _get_shape_aabb : CollisionShape3D has no shape");
     return AABB();
 }
 
 static void _build_convex_planes(CollisionShape3D * inst, std::vector<Plane> &planes) {
     Ref<ConvexPolygonShape3D> shape = inst->get_shape();
     if(shape.is_null()) {
-        UtilityFunctions::print("[Enflame] _get_shape_aabb : shape type not supported");
+        UtilityFunctions::push_error("[Enflame] _get_shape_aabb : shape type not supported");
 
     }
     planes.clear();
@@ -295,13 +295,13 @@ void FireComponent3D::_update_burn_area() {
 
 void FireComponent3D::apply_fire(Vector3 world_pos, int damage) {
     if(damage < 1) {
-        UtilityFunctions::print("[Enflame] apply_fire : invalid damage=", damage);
+        UtilityFunctions::push_error("[Enflame] ", _parent->get_name(), " apply_fire : invalid damage=", damage);
         return;    
     }
     Vector3i pos = Vector3i();
     fire_cell_t * cell = _get_closest_cell(world_pos, &pos);
     if(cell == nullptr) {
-        UtilityFunctions::print("[Enflame] apply_fire : closest cell is null");
+        UtilityFunctions::push_error("[Enflame] ", _parent->get_name(), " apply_fire : closest cell is null");
         return;    
     }
 
@@ -540,7 +540,7 @@ void FireComponent3D::_check_inter_spread() {
             continue;
         }
         if(!body->has_user_signal("spread_fire")) {
-            UtilityFunctions::print("[Enflame] ERROR no spread signal", get_name(), "->", body->get_name());
+            UtilityFunctions::push_error("[Enflame] ", _parent->get_name(), " no spread signal", get_name(), "->", body->get_name());
             continue;
         }
         body->emit_signal("spread_fire", pos, dmg);
@@ -736,9 +736,6 @@ void FireComponent3D::set_visible_debug(bool v) {
         }
         rs->instance_set_visible(cell.dbg_mesh_rid, visible_debug);
     }
-
-    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "visible_debug=", visible_debug);
-
 }
 bool FireComponent3D::get_visible_debug() const {
     return visible_debug;
@@ -796,6 +793,10 @@ int FireComponent3D::get_spread_budget() const {
 }
 
 void FireComponent3D::set_spread_budget(int v) {
+    // don't set at runtime lol
+    if(!Engine::get_singleton()->is_editor_hint()) {
+        return;
+    }
     s_max_spread = MAX(v, 0);
 }
 
@@ -870,14 +871,14 @@ void FireComponent3D::_on_ready() {
 		}
 	}
     if(!_base_col_inst) {
-        UtilityFunctions::print("[Enflame] No CollisionShape3D sibling found");
+        UtilityFunctions::push_error("[Enflame] ", _parent->get_name(), " No CollisionShape3D sibling found");
 		return;
     }
 
     // make sure it has a shape
     Ref<Shape3D> shape = _base_col_inst->get_shape();
     if(!shape.is_valid()) {
-        UtilityFunctions::print("[Enflame] CollisionShape3D has no shape");
+        UtilityFunctions::push_error("[Enflame] ", _parent->get_name(), " CollisionShape3D has no shape");
 		return;
     }
 
@@ -920,10 +921,10 @@ void FireComponent3D::_on_ready() {
     _parent->connect("spread_fire", Callable(this, "apply_fire"));
 
     // verbose print
-    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_is_convex=", _is_convex);
-    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_local_aabb=", _local_aabb);
-    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_cell_size=", _cell_size);
-    UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_grid.size()=", _grid.size());
+    // UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_is_convex=", _is_convex);
+    // UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_local_aabb=", _local_aabb);
+    // UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_cell_size=", _cell_size);
+    // UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_grid.size()=", _grid.size());
 
 }
 

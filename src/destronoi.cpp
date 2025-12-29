@@ -600,7 +600,7 @@ void DestronoiNode::_on_ready() {
 	}
 
 	if (!mesh_instance) {
-		UtilityFunctions::print("[Destronoi] No MeshInstance3D sibling found");
+		UtilityFunctions::push_error("[Destronoi] ", parent->get_name(), " No MeshInstance3D sibling found");
 		return;
 	}
 
@@ -610,13 +610,13 @@ void DestronoiNode::_on_ready() {
     // }
 
 
-    UtilityFunctions::print("[Destronoi] GOT HERE, EXPECTING THIS TO MAYBE HANG");
+    // UtilityFunctions::print("[Destronoi] GOT HERE, EXPECTING THIS TO MAYBE HANG");
     Ref<Mesh> mm = mesh_instance->get_mesh();
     Ref<ArrayMesh> am = mm;
     if(am.is_null()) {
         Ref<PrimitiveMesh> pm = mm;
         if(pm.is_null()) {
-    		UtilityFunctions::print("[Destronoi] UNSUPPORTED MESH TYPE. USE ARRAYMESH OR PRIMITIVE");
+    		UtilityFunctions::push_error("[Destronoi] ", parent->get_name(), " UNSUPPORTED MESH TYPE. USE ARRAYMESH OR PRIMITIVE");
             return;
         }
         Array ar = pm->get_mesh_arrays();
@@ -658,7 +658,7 @@ void DestronoiNode::_on_ready() {
 		}
 	}
     // UtilityFunctions::print("[Destronoi] bisect done");
-    UtilityFunctions::print("[Destronoi] _ON_READY OK");
+    // UtilityFunctions::print("[Destronoi] _ON_READY OK");
 
 }
 
