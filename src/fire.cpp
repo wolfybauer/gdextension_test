@@ -271,26 +271,25 @@ void FireComponent3D::_update_burn_area() {
         return;
     }
 
-    // get combined aabb of all burn points
-    AABB burn_aabb = AABB();
-    for(auto &kv : _grid) {
-        fire_cell_t &data = kv.second;
-        if(!data.burning) {
-            continue;
-        }
+    AABB burn_aabb;
+    bool first = true;
 
-        Vector3 world_pos = to_global(data.local_pos);
-        AABB new_box = AABB(world_pos, _cell_size);
-        burn_aabb = burn_aabb.merge(new_box);
+    for (auto &kv : _grid) {
+        if (!kv.second.burning) continue;
+
+        AABB cell_box(kv.second.local_pos - _cell_size * 0.5f, _cell_size);
+        burn_aabb = first ? cell_box : burn_aabb.merge(cell_box);
+        first = false;
     }
 
-    burn_aabb.position -= (Vector3(1,1,1) * spread_margin);
-    burn_aabb.size += (Vector3(1,1,1) * spread_margin * 2.0f);
+    burn_aabb.position -= Vector3(spread_margin, spread_margin, spread_margin);
+    burn_aabb.size     += Vector3(1,1,1) * spread_margin * 2.0f;
 
     _burn_box_ref->set_size(burn_aabb.size);
-    Transform3D t = _burn_area->get_global_transform();
-    t.origin = burn_aabb.position + burn_aabb.size * 0.5f;
-    _burn_area->set_global_transform(t);
+
+    // collision shape is centered
+    _burn_area_col_inst->set_position(burn_aabb.position + burn_aabb.size * 0.5f);
+
 
 }
 
