@@ -907,6 +907,8 @@ void FireComponent3D::_on_ready() {
     add_child(_burn_area);
     _burn_area->set_global_transform(get_global_transform());
 
+    _emitter_scene = _get_emitter_scene();
+
     // add user signal to parent for inter-object spread
     Array usrargs;
     Dictionary dpos;
@@ -919,6 +921,12 @@ void FireComponent3D::_on_ready() {
     usrargs.push_back(ddam);
     _parent->add_user_signal("spread_fire", usrargs);
     _parent->connect("spread_fire", Callable(this, "apply_fire"));
+
+    if(is_torch) {
+        for(auto & kv : _grid) {
+            _ignite_cell(kv.first);
+        }
+    }
 
     // verbose print
     // UtilityFunctions::prints("[Enflame]", _parent->get_name(), "_is_convex=", _is_convex);
