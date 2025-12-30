@@ -922,6 +922,10 @@ void FireComponent3D::_on_ready() {
     _parent->add_user_signal("spread_fire", usrargs);
     _parent->connect("spread_fire", Callable(this, "apply_fire"));
 
+    if(Engine::get_singleton()->is_editor_hint()) {
+        return;
+    }
+
     if(is_torch) {
         for(auto & kv : _grid) {
             _ignite_cell(kv.first);

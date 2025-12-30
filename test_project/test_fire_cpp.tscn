@@ -1,14 +1,18 @@
-[gd_scene load_steps=10 format=3 uid="uid://blkpvcwih8j7w"]
+[gd_scene load_steps=12 format=3 uid="uid://blkpvcwih8j7w"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_pfxp3"]
 [ext_resource type="Script" uid="uid://u25egtqimtef" path="res://test_fire_cpp.gd" id="1_u3ega"]
 [ext_resource type="Material" uid="uid://bfdrni2qgdlhy" path="res://glass_material.tres" id="3_naox4"]
+[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://woodcrate.jpg" id="3_u3ega"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hbvx4"]
 albedo_texture = ExtResource("1_pfxp3")
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gnr80"]
+albedo_texture = ExtResource("3_u3ega")
+
 [sub_resource type="BoxMesh" id="BoxMesh_hbvx4"]
-material = ExtResource("3_naox4")
+material = SubResource("StandardMaterial3D_gnr80")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_naox4"]
 
@@ -47,6 +51,8 @@ mesh = SubResource("BoxMesh_hbvx4")
 shape = SubResource("BoxShape3D_naox4")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="Primitive"]
+torch = true
+max_hp = -1
 
 [node name="DestronoiNode" type="DestronoiNode" parent="Primitive"]
 
