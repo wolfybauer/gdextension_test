@@ -2,6 +2,7 @@
 // #include "vst_node.hpp"
 #include "destronoi.hpp"
 #include "fire.hpp"
+#include "fade/fade_wall.hpp"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -20,6 +21,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	// GDREGISTER_CLASS(VSTNode)
 	GDREGISTER_CLASS(DestronoiNode)
 	GDREGISTER_CLASS(FireComponent3D)
+	GDREGISTER_CLASS(FadeWall3D)
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
