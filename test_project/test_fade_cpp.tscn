@@ -1,0 +1,145 @@
+[gd_scene load_steps=16 format=3 uid="uid://7v8njv71gxsh"]
+
+[ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_qdlsv"]
+[ext_resource type="Script" uid="uid://c6bw5h615kxf" path="res://test_fade_cpp.gd" id="1_rqttx"]
+[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://woodcrate.jpg" id="3_vqdp2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rqttx"]
+albedo_texture = ExtResource("1_qdlsv")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_qdlsv"]
+size = Vector3(3, 3, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0o580"]
+albedo_color = Color(1, 0.23137255, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2py3s"]
+material = SubResource("StandardMaterial3D_0o580")
+size = Vector3(3, 3, 1)
+
+[sub_resource type="Shader" id="Shader_vqdp2"]
+code = "
+shader_type spatial;
+// render_mode blend_mix, depth_draw_alpha_prepass;
+
+uniform float opacity : hint_range(0.0, 1.0) = 1.0;
+
+uniform bool use_texture = false;
+uniform sampler2D albedo_tex : source_color;
+uniform vec4 albedo_color : source_color = vec4(1.0);
+
+void fragment() {
+    vec4 base = use_texture
+        ? texture(albedo_tex, UV)
+        : albedo_color;
+
+    ALBEDO = base.rgb;
+    ALPHA  = opacity;
+}
+    "
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0o580"]
+render_priority = 0
+shader = SubResource("Shader_vqdp2")
+shader_parameter/opacity = 1.0
+shader_parameter/use_texture = false
+shader_parameter/albedo_color = Color(1, 0.23137255, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2py3s"]
+albedo_texture = ExtResource("3_vqdp2")
+
+[sub_resource type="BoxMesh" id="BoxMesh_k5nj1"]
+material = SubResource("StandardMaterial3D_2py3s")
+size = Vector3(3, 3, 1)
+
+[sub_resource type="Shader" id="Shader_2py3s"]
+code = "
+shader_type spatial;
+// render_mode blend_mix, depth_draw_alpha_prepass;
+
+uniform float opacity : hint_range(0.0, 1.0) = 1.0;
+
+uniform bool use_texture = false;
+uniform sampler2D albedo_tex : source_color;
+uniform vec4 albedo_color : source_color = vec4(1.0);
+
+void fragment() {
+    vec4 base = use_texture
+        ? texture(albedo_tex, UV)
+        : albedo_color;
+
+    ALBEDO = base.rgb;
+    ALPHA  = opacity;
+}
+    "
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_k5nj1"]
+render_priority = 0
+shader = SubResource("Shader_2py3s")
+shader_parameter/opacity = 1.0
+shader_parameter/use_texture = true
+shader_parameter/albedo_tex = ExtResource("3_vqdp2")
+shader_parameter/albedo_color = Color(1, 1, 1, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qdlsv"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_rqttx"]
+
+[node name="Test_FadeCPP" type="Node3D"]
+script = ExtResource("1_rqttx")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.9909832, -0.1339862, 0, 0.083773874, 0.61960495, 0.78043044, -0.1045669, -0.7733935, 0.6252426, 0, 8.674, 5.0900106)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.8660254, -0.26717615, 0.42263094, 0, 0.84526193, 0.5343523, -0.5, -0.46276268, 0.73201823, 7, 10, 10)
+projection = 1
+size = 5.0
+
+[node name="Floor" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(20, 0, 20)
+material = SubResource("StandardMaterial3D_rqttx")
+
+[node name="FadeWall3D" type="FadeWall3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FadeWall3D"]
+shape = SubResource("BoxShape3D_qdlsv")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FadeWall3D"]
+mesh = SubResource("BoxMesh_2py3s")
+surface_material_override/0 = SubResource("ShaderMaterial_0o580")
+
+[node name="FadeWall3D2" type="FadeWall3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FadeWall3D2"]
+shape = SubResource("BoxShape3D_qdlsv")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FadeWall3D2"]
+mesh = SubResource("BoxMesh_k5nj1")
+surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
+
+[node name="Player" type="AnimatableBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_qdlsv")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+mesh = SubResource("CapsuleMesh_rqttx")
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CamToggle" type="CheckButton" parent="UI"]
+layout_mode = 0
+offset_right = 44.0
+offset_bottom = 24.0
