@@ -8,7 +8,7 @@
 
 namespace godot {
 
-namespace fadegeo {
+namespace fade_geometry {
 
 inline bool point_in_aabb(Vector2 p, Vector2 aabbmin, Vector2 aabbmax) {
     return (
@@ -53,7 +53,7 @@ inline bool projected_outside(Vector2 cam2, Vector2 ply2, Vector2 center2d) {
 inline void precompute_bounds(MeshInstance3D * mesh_inst, Vector2 & aabbmin, Vector2 & aabbmax, Vector2 & center2d, Vector2 & wallnormal) {
     Ref<Mesh> mesh = mesh_inst->get_mesh();
     if(!mesh.is_valid()) {
-        UtilityFunctions::push_error("[FadeWall] ", mesh_inst->get_name(), " precompute_bounds : Mesh is invalid. abort");
+        UtilityFunctions::push_error("[FadeGeometry] ", mesh_inst->get_name(), " precompute_bounds : Mesh is invalid. abort");
         return;
     }
     
@@ -99,6 +99,6 @@ inline void precompute_bounds(MeshInstance3D * mesh_inst, Vector2 & aabbmin, Vec
     }
 }
 
-} // namespace fadegeo
+} // namespace fade_geometry
 
 } // namespace godot

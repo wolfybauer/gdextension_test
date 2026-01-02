@@ -2,6 +2,7 @@
 #include "fade/geometry.hpp"
 
 #include "godot_cpp/classes/engine.hpp"
+#include "godot_cpp/classes/scene_tree.hpp"
 // #include "godot_cpp/classes/resource_loader.hpp"
 #include "godot_cpp/classes/camera3d.hpp"
 #include "godot_cpp/classes/mesh.hpp"
@@ -18,20 +19,25 @@
 #include <cmath>
 
 using namespace godot;
-using namespace fadegeo;
+using namespace fade_geometry;
+
+int FadeWall3D::s_global_render_priority = 0;
+float FadeWall3D::s_global_y_margin = TOP_MARGIN;
 
 void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, float fade_speed, float min_alpha)
 {
-    // // TODO: this is fade floor logic. can prob skip by just adding to fade_obj group
-    // if(target->get_global_position().y + TOP_MARGIN < get_global_position().y) {
-    //     _fade_target = min_alpha;
-    //     set_visible(false);
-    //     return;
-    // }
-    // set_visible(true);
-    // // TODO: unset fade if doing this
-
     Vector3 tp = target->get_global_position();
+    Vector3 mypos = get_global_position();
+    if(tp.y + (*_y_margin) < mypos.y) {
+        set_visible(false);
+        return;
+    }
+    set_visible(true);
+    if((mypos.y + (*_y_margin)) < tp.y) {
+        _fade_target = 1.0f;
+        return;
+    }
+
     Vector2 ply2 = Vector2(tp.x, tp.z);
 
     if(max_dist > 0.0f && !_wall_normal.is_zero_approx()) {
@@ -85,7 +91,7 @@ void FadeWall3D::_on_ready() {
     if(Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
-    
+
     MeshInstance3D * mesh_inst = nullptr;
     for(auto & v : get_children()) {
         mesh_inst = Object::cast_to<MeshInstance3D>(v);
@@ -125,8 +131,12 @@ void fragment() {
         return;
     }
 
-    // TODO set render priority
+    // assign render prio / y margin pointers
+    _render_prio = render_prio_override_enable ? &render_prio_override : &s_global_render_priority;
+    _y_margin = y_margin_override_enable ? &y_margin_override : &s_global_y_margin;
+    _apply_render_priority();
 
+    // get / set up the texture/color we'll be fading
     Ref<StandardMaterial3D> old = mesh_inst->get_mesh()->surface_get_material(0);
     if(old.is_valid()) {
         Ref<Texture> tex = old->get("albedo_texture");
@@ -179,4 +189,174 @@ void FadeWall3D::_notification(int p_what) {
 
 void FadeWall3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("check_fade", "target", "camera", "max_dist", "fade_speed", "min_alpha"), &FadeWall3D::check_fade);
+    
+    ClassDB::bind_method(D_METHOD("set_global_render_priority", "lvl"), &FadeWall3D::set_global_render_priority);
+    ClassDB::bind_method(D_METHOD("get_global_render_priority"), &FadeWall3D::get_global_render_priority);
+
+    ClassDB::bind_method(D_METHOD("set_render_priority_override", "lvl"), &FadeWall3D::set_render_priority_override);
+    ClassDB::bind_method(D_METHOD("get_render_priority_override"), &FadeWall3D::get_render_priority_override);
+    ClassDB::bind_method(D_METHOD("set_priority_override_enable", "en"), &FadeWall3D::set_priority_override_enable);
+    ClassDB::bind_method(D_METHOD("get_priority_override_enable"), &FadeWall3D::get_priority_override_enable);
+
+    ClassDB::bind_method(D_METHOD("set_global_y_margin", "height"), &FadeWall3D::set_global_y_margin);
+    ClassDB::bind_method(D_METHOD("get_global_y_margin"), &FadeWall3D::get_global_y_margin);
+    
+    ClassDB::bind_method(D_METHOD("set_y_margin_override", "height"), &FadeWall3D::set_y_margin_override);
+    ClassDB::bind_method(D_METHOD("get_y_margin_override"), &FadeWall3D::get_y_margin_override);
+    ClassDB::bind_method(D_METHOD("set_margin_override_enable", "en"), &FadeWall3D::set_margin_override_enable);
+    ClassDB::bind_method(D_METHOD("get_margin_override_enable"), &FadeWall3D::get_margin_override_enable);
+
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::INT,
+            "rendering/global_render_priority"
+        ),
+        "set_global_render_priority",
+        "get_global_render_priority"
+    );
+    
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::INT,
+            "rendering/render_priority_override"
+        ),
+        "set_render_priority_override",
+        "get_render_priority_override"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::BOOL,
+            "rendering/priority_override_enable"
+        ),
+        "set_priority_override_enable",
+        "get_priority_override_enable"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::FLOAT,
+            "rendering/global_y_margin",
+            PROPERTY_HINT_RANGE,
+            "0.0,10.0,0.1"
+        ),
+        "set_global_y_margin",
+        "get_global_y_margin"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::FLOAT,
+            "rendering/y_margin_override",
+            PROPERTY_HINT_RANGE,
+            "0.0,10.0,0.1"
+        ),
+        "set_y_margin_override",
+        "get_y_margin_override"
+    );
+
+    ADD_PROPERTY(
+        PropertyInfo(
+            Variant::BOOL,
+            "rendering/margin_override_enable"
+        ),
+        "set_margin_override_enable",
+        "get_margin_override_enable"
+    );
+}
+
+void FadeWall3D::_apply_render_priority() {
+    if (!_fade_mat.is_valid() || !_render_prio) {
+        return;
+    }
+    _fade_mat->set_render_priority(*_render_prio);
+}
+
+
+void FadeWall3D::set_global_render_priority(int lvl) {
+    s_global_render_priority = lvl;
+
+    if(Engine::get_singleton()->is_editor_hint()) {
+        return;
+    }
+
+    Array walls = get_tree()->get_nodes_in_group("fade_wall");
+    for (int i = 0; i < walls.size(); i++) {
+        FadeWall3D *fw = Object::cast_to<FadeWall3D>(walls[i]);
+        if (!fw) {
+            continue;
+        }
+
+        if (!fw->render_prio_override_enable) {
+            fw->_render_prio = &s_global_render_priority;
+            fw->_apply_render_priority();
+        }
+    }
+}
+
+
+int FadeWall3D::get_global_render_priority() const {
+    return s_global_render_priority;
+}
+
+void FadeWall3D::set_render_priority_override(int lvl) {
+    render_prio_override = lvl;
+    if (render_prio_override_enable) {
+        _apply_render_priority();
+    }
+}
+
+int FadeWall3D::get_render_priority_override() const {
+    return render_prio_override;
+}
+
+void FadeWall3D::set_priority_override_enable(bool e) {
+    render_prio_override_enable = e;
+    _render_prio = e ? &render_prio_override : &s_global_render_priority;
+    _apply_render_priority();
+}
+
+bool FadeWall3D::get_priority_override_enable() const {
+    return render_prio_override_enable;
+}
+
+void FadeWall3D::set_global_y_margin(float m) {
+    s_global_y_margin = m;
+
+    if(Engine::get_singleton()->is_editor_hint()) {
+        return;
+    }
+
+    Array walls = get_tree()->get_nodes_in_group("fade_wall");
+    for (int i = 0; i < walls.size(); i++) {
+        FadeWall3D *fw = Object::cast_to<FadeWall3D>(walls[i]);
+        if (!fw) {
+            continue;
+        }
+
+        if (!fw->y_margin_override_enable) {
+            fw->_y_margin = &s_global_y_margin;
+        }
+    }
+}
+
+float FadeWall3D::get_global_y_margin() const {
+    return s_global_y_margin;
+}
+
+void FadeWall3D::set_y_margin_override(float m) {
+    y_margin_override = m;
+}
+
+float FadeWall3D::get_y_margin_override() const {
+    return y_margin_override;
+}
+
+void FadeWall3D::set_margin_override_enable(bool e) {
+    y_margin_override_enable = e;
+    _y_margin = e ? &y_margin_override : &s_global_y_margin;
+}
+
+bool FadeWall3D::get_margin_override_enable() const {
+    return y_margin_override_enable;
 }

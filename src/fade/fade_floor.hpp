@@ -6,7 +6,6 @@
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/core/class_db.hpp>
-#include "godot_cpp/classes/mesh_instance3d.hpp"
 
 #define TOP_MARGIN 2.0f
 
@@ -28,7 +27,7 @@ public:
 protected:
     static void _bind_methods();
 
-    // static int s_render_prio;
+    // static int s_global_render_priority;
 
 private:
 
@@ -48,13 +47,10 @@ private:
     float _fade_target = 1.0f;
     float _fade_speed = 5.0f;
 
-    float _wall_height = 0.0f;
     float _target_dist = 0.0f;
 
     // funcs
     void _on_ready();
-    void _on_physics_process(float delta);
-    void _precompute_bounds(MeshInstance3D * mesh_inst);
 };
 
 }
