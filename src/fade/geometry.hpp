@@ -5,6 +5,7 @@
 #include "godot_cpp/classes/mesh_instance3d.hpp"
 #include <godot_cpp/classes/ref.hpp>
 
+#define DEFAULT_FADE_Y_MARGIN 2.0f
 
 namespace godot {
 

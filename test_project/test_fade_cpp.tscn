@@ -1,9 +1,8 @@
-[gd_scene load_steps=19 format=3 uid="uid://7v8njv71gxsh"]
+[gd_scene load_steps=18 format=3 uid="uid://7v8njv71gxsh"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_qdlsv"]
 [ext_resource type="Script" uid="uid://c6bw5h615kxf" path="res://test_fade_cpp.gd" id="1_rqttx"]
 [ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://woodcrate.jpg" id="3_vqdp2"]
-[ext_resource type="Script" uid="uid://chveyxrhc4mta" path="res://fade_floor.gd" id="4_0o580"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rqttx"]
 albedo_texture = ExtResource("1_qdlsv")
@@ -74,6 +73,32 @@ size = Vector3(6, 0.1, 4)
 [node name="Test_FadeCPP" type="Node3D"]
 script = ExtResource("1_rqttx")
 
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 24.0
+grow_horizontal = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/PanelContainer"]
+layout_mode = 2
+
+[node name="CamToggle" type="CheckButton" parent="UI/PanelContainer/HBoxContainer"]
+layout_mode = 2
+text = "ORTHO"
+
+[node name="PauseButton" type="Button" parent="UI/PanelContainer/HBoxContainer"]
+layout_mode = 2
+text = "PAUSE"
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.9909832, -0.1339862, 0, 0.083773874, 0.61960495, 0.78043044, -0.1045669, -0.7733935, 0.6252426, 0, 8.674, 5.0900106)
 shadow_enabled = true
@@ -127,7 +152,7 @@ surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
 shape = SubResource("BoxShape3D_qdlsv")
 
 [node name="Player" type="AnimatableBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -1.2)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -137,36 +162,8 @@ shape = SubResource("CapsuleShape3D_qdlsv")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_rqttx")
 
-[node name="UI" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="PanelContainer" type="PanelContainer" parent="UI"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 24.0
-grow_horizontal = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UI/PanelContainer"]
-layout_mode = 2
-
-[node name="CamToggle" type="CheckButton" parent="UI/PanelContainer/HBoxContainer"]
-layout_mode = 2
-text = "ORTHO"
-
-[node name="PauseButton" type="Button" parent="UI/PanelContainer/HBoxContainer"]
-layout_mode = 2
-text = "PAUSE"
-
-[node name="FadeFloor" type="StaticBody3D" parent="."]
+[node name="FadeFloor" type="FadeFloor3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -2)
-script = ExtResource("4_0o580")
-metadata/_custom_type_script = "uid://chveyxrhc4mta"
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FadeFloor"]
 mesh = SubResource("BoxMesh_e7laa")

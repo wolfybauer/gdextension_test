@@ -34,10 +34,10 @@ func toggle_paused():
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	tw = get_tree().create_tween()
-	tw.tween_property(player, 'global_position', Vector3(5.0,0.0,-1.2), 1.0)
-	tw.tween_property(player, 'global_position', Vector3(5.0,5.0,-1.2), 1.0)
-	tw.tween_property(player, 'global_position', Vector3(-5.0,5.0,-1.2), 1.0)
-	tw.tween_property(player, 'global_position', Vector3(-5.0,0.0,-1.2), 1.0)
+	tw.tween_property(player, 'global_position', Vector3(7.0,0.0,-1.2), 2.0)
+	tw.tween_property(player, 'global_position', Vector3(7.0,5.0,-1.2), 1.0)
+	tw.tween_property(player, 'global_position', Vector3(-7.0,5.0,-1.2), 2.0)
+	tw.tween_property(player, 'global_position', Vector3(-7.0,0.0,-1.2), 1.0)
 	tw.set_loops()
 	
 	cam_toggle.toggled.connect(func(e):
@@ -51,8 +51,9 @@ func _ready() -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
 	get_tree().call_group('fade_wall', 'check_fade', player, camera_3d, 1.5, 5.0, 0.25)
-	get_tree().call_group('fade_floor_gd', 'check_fade', player, camera_3d)
-	get_tree().call_group('fade_wall_gd', 'check_fade', player, camera_3d, 2.0)
+	get_tree().call_group('fade_floor', 'check_fade', player, 1.0)
+	#get_tree().call_group('fade_wall_gd', 'check_fade', player, camera_3d, 2.0)
+	#get_tree().call_group('fade_floor_gd', 'check_fade', player, camera_3d)
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed('ui_cancel'):

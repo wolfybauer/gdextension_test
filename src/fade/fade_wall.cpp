@@ -22,14 +22,31 @@ using namespace godot;
 using namespace fade_geometry;
 
 int FadeWall3D::s_global_render_priority = 0;
-float FadeWall3D::s_global_y_margin = TOP_MARGIN;
+float FadeWall3D::s_global_y_margin = DEFAULT_FADE_Y_MARGIN;
 
 void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, float fade_speed, float min_alpha)
 {
     Vector3 tp = target->get_global_position();
     Vector3 mypos = get_global_position();
     if(tp.y + (*_y_margin) < mypos.y) {
-        set_visible(false);
+        if(max_dist > 0.0f) {
+            Vector2 t2(tp.x, tp.z);
+
+            // clamp target to floor AABB in XZ
+            Vector2 closest(
+                Math::clamp(t2.x, _aabb_min.x, _aabb_max.x),
+                Math::clamp(t2.y, _aabb_min.y, _aabb_max.y)
+            );
+
+            float dist = t2.distance_to(closest);
+            if (dist > max_dist) {
+                _fade_target = 1.0f;
+                // set_visible(true);
+                return;
+            }
+        }
+        _fade_target = 0.0f;
+        // set_visible(false);
         return;
     }
     set_visible(true);

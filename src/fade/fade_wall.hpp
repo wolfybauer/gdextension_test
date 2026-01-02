@@ -7,8 +7,6 @@
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
-#define TOP_MARGIN 2.0f
-
 class Node3D;
 class Camer3D;
 
