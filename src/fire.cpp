@@ -613,15 +613,15 @@ void FireComponent3D::_bind_methods() {
     );
 
     ADD_PROPERTY(
-    PropertyInfo(
-        Variant::INT,
-        "spread_damage",
-        PROPERTY_HINT_RANGE,
-        "0,1000,1"
-    ),
-    "set_spread_damage",
-    "get_spread_damage"
-);
+        PropertyInfo(
+            Variant::INT,
+            "spread_damage",
+            PROPERTY_HINT_RANGE,
+            "0,1000,1"
+        ),
+        "set_spread_damage",
+        "get_spread_damage"
+    );
 
     ADD_PROPERTY(
         PropertyInfo(Variant::OBJECT, "override_emitter", PROPERTY_HINT_RESOURCE_TYPE, "PackedScene"),
