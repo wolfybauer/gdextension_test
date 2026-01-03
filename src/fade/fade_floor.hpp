@@ -1,6 +1,7 @@
 #pragma once
 
 // #include "godot_cpp/classes/shader_material.hpp"
+#include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/static_body3d.hpp"
 // #include "godot_cpp/variant/vector2.hpp"
 #include <godot_cpp/classes/ref.hpp>
@@ -21,6 +22,7 @@ public:
     void _notification(int p_what);
 
     void check_fade(Node3D * target, float max_dist=3.0f);
+    static void check_fade_objects(SceneTree * tree, Node3D * target, float max_dist=3.0f);
 
     void set_global_y_margin(float m);
     float get_global_y_margin() const;
@@ -37,6 +39,8 @@ protected:
 private:
 
     static float s_global_y_margin;
+    static float s_lowest_floor_height;
+    static float s_last_lowest_floor_height;
 
     // exports
     float y_margin_override = 0.0f;

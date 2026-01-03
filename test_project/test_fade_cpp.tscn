@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://7v8njv71gxsh"]
+[gd_scene load_steps=20 format=3 uid="uid://7v8njv71gxsh"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_qdlsv"]
 [ext_resource type="Script" uid="uid://c6bw5h615kxf" path="res://test_fade_cpp.gd" id="1_rqttx"]
@@ -65,10 +65,16 @@ albedo_color = Color(1, 1, 0.43137255, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_e7laa"]
 material = SubResource("StandardMaterial3D_k5nj1")
-size = Vector3(6, 0.1, 4)
+size = Vector3(6, 0.1, 8)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_vo2n0"]
-size = Vector3(6, 0.1, 4)
+size = Vector3(6, 0.1, 8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vqdp2"]
+albedo_color = Color(0.27450982, 0.21568628, 0.21568628, 1)
+
+[sub_resource type="PrismMesh" id="PrismMesh_0o580"]
+material = SubResource("StandardMaterial3D_vqdp2")
 
 [node name="Test_FadeCPP" type="Node3D"]
 script = ExtResource("1_rqttx")
@@ -163,10 +169,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_rqttx")
 
 [node name="FadeFloor" type="FadeFloor3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -4)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FadeFloor"]
 mesh = SubResource("BoxMesh_e7laa")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FadeFloor"]
 shape = SubResource("BoxShape3D_vo2n0")
+
+[node name="FadeObj" type="MeshInstance3D" parent="." groups=["fade_obj"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -6)
+mesh = SubResource("PrismMesh_0o580")

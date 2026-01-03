@@ -52,8 +52,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	get_tree().call_group('fade_wall', 'check_fade', player, camera_3d, 1.5, 5.0, 0.25)
 	get_tree().call_group('fade_floor', 'check_fade', player, 1.0)
-	#get_tree().call_group('fade_wall_gd', 'check_fade', player, camera_3d, 2.0)
-	#get_tree().call_group('fade_floor_gd', 'check_fade', player, camera_3d)
+	FadeFloor3D.check_fade_objects(get_tree(), player, 1.0)
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed('ui_cancel'):
