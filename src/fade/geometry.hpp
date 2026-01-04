@@ -11,6 +11,16 @@ namespace godot {
 
 namespace fade_geometry {
 
+inline float get_xz_dist(Vector3 targetpos, Vector2 aabbmin, Vector2 aabbmax) {
+    Vector2 t2(targetpos.x, targetpos.z);
+    return t2.distance_to(
+        Vector2(
+            Math::clamp(t2.x, aabbmin.x, aabbmax.x),
+            Math::clamp(t2.y, aabbmin.y, aabbmax.y)
+        )
+    );
+}
+
 inline bool point_in_aabb(Vector2 p, Vector2 aabbmin, Vector2 aabbmax) {
     return (
         p.x >= aabbmin.x && p.x <= aabbmax.x &&

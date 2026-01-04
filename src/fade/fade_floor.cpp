@@ -19,7 +19,6 @@ float FadeFloor3D::s_global_y_margin = DEFAULT_FADE_Y_MARGIN;
 float FadeFloor3D::s_lowest_floor_height = -9999.0f;
 float FadeFloor3D::s_last_lowest_floor_height = -9999.0f;
 
-
 void FadeFloor3D::check_fade(Node3D * target, float max_dist) {
     Vector3 tp = target->get_global_position();
     Vector3 myp = get_global_position();
@@ -31,16 +30,7 @@ void FadeFloor3D::check_fade(Node3D * target, float max_dist) {
     }
 
     if (max_dist > 0.0f) {
-        Vector2 t2(tp.x, tp.z);
-
-        // clamp target to floor AABB in XZ
-        Vector2 closest(
-            Math::clamp(t2.x, _aabb_min.x, _aabb_max.x),
-            Math::clamp(t2.y, _aabb_min.y, _aabb_max.y)
-        );
-
-        float dist = t2.distance_to(closest);
-        if (dist > max_dist) {
+        if (get_xz_dist(tp, _aabb_min, _aabb_max) > max_dist) {
             set_visible(true);
             return;
         }
@@ -58,7 +48,7 @@ void FadeFloor3D::check_fade_floors(SceneTree * tree, Node3D * target, float max
 }
 
 
-void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target) {
+void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target, float max_dist) {
     if(!tree || !target) {
         UtilityFunctions::push_error("[FadeFloor3D] check_fade_objects : tree or target is null. abort");
         return;
@@ -69,38 +59,46 @@ void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target) {
     s_last_lowest_floor_height = s_lowest_floor_height;
     s_lowest_floor_height = 9999.0f;
     Array objs = tree->get_nodes_in_group("fade_floor");
+    float xzdist = -1.0f;
     for (int i = 0; i < objs.size(); i++) {
-        FadeFloor3D *fw = Object::cast_to<FadeFloor3D>(objs[i]);
-        if (!fw) {
+        FadeFloor3D *floor = Object::cast_to<FadeFloor3D>(objs[i]);
+        if (!floor) {
             continue;
         }
-        Vector3 pos = fw->get_global_position(); 
+        Vector3 pos = floor->get_global_position(); 
         if(pos.y < tp.y) {
             continue;
         }
         if(pos.y < s_lowest_floor_height) {
             s_lowest_floor_height = pos.y;
+            xzdist = get_xz_dist(tp, floor->_aabb_min, floor->_aabb_max);
         }
     }
 
     // exit early if not change
-    if(Math::is_equal_approx(s_lowest_floor_height, s_last_lowest_floor_height)) {
+    if(max_dist <= 0.0f && Math::is_equal_approx(s_lowest_floor_height, s_last_lowest_floor_height)) {
         return;
     }
 
+    // check all objects
     objs = tree->get_nodes_in_group("fade_obj");
     for (int i = 0; i < objs.size(); i++) {
-        Node3D *fo = Object::cast_to<Node3D>(objs[i]);
-        if(!fo) {
+        Node3D *fobj = Object::cast_to<Node3D>(objs[i]);
+        if(!fobj) {
             continue;
         }
 
-        Vector3 fp = fo->get_global_position();
+        Vector3 fp = fobj->get_global_position();
         
         if(fp.y > s_lowest_floor_height) {
-            fo->set_visible(false);
+            // target is too far from floor
+            if(max_dist > 0.0f && xzdist > max_dist) {
+                fobj->set_visible(true);
+            } else {
+                fobj->set_visible(false);
+            }
         } else {
-            fo->set_visible(true);
+            fobj->set_visible(true);
         }
     }
 }
@@ -143,7 +141,7 @@ void FadeFloor3D::_notification(int p_what) {
 
 void FadeFloor3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("check_fade", "target", "max_dist"), &FadeFloor3D::check_fade);
-    ClassDB::bind_static_method("FadeFloor3D", D_METHOD("check_fade_objects", "tree", "target"), &FadeFloor3D::check_fade_objects);
+    ClassDB::bind_static_method("FadeFloor3D", D_METHOD("check_fade_objects", "tree", "target", "max_dist"), &FadeFloor3D::check_fade_objects);
     ClassDB::bind_static_method("FadeFloor3D", D_METHOD("check_fade_floors", "tree", "target", "max_dist"), &FadeFloor3D::check_fade_floors);
     
     ClassDB::bind_method(D_METHOD("set_global_y_margin", "height"), &FadeFloor3D::set_global_y_margin);

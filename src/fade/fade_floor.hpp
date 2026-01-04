@@ -23,7 +23,7 @@ public:
 
     void check_fade(Node3D * target, float max_dist=3.0f);
     static void check_fade_floors(SceneTree * tree, Node3D * target, float max_dist=3.0f);
-    static void check_fade_objects(SceneTree * tree, Node3D * target);
+    static void check_fade_objects(SceneTree * tree, Node3D * target, float max_dist=3.0f);
 
     void set_global_y_margin(float m);
     float get_global_y_margin() const;
