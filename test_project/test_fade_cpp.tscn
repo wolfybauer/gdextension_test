@@ -149,7 +149,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_rqttx")
 
 [node name="FadeWall3D" type="FadeWall3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 2, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FadeWall3D"]
 shape = SubResource("BoxShape3D_qdlsv")
@@ -158,7 +158,7 @@ shape = SubResource("BoxShape3D_qdlsv")
 mesh = SubResource("BoxMesh_vo2n0")
 
 [node name="FadeWall3D3" type="FadeWall3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 5, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FadeWall3D3"]
 shape = SubResource("BoxShape3D_qdlsv")
@@ -167,7 +167,7 @@ shape = SubResource("BoxShape3D_qdlsv")
 mesh = SubResource("BoxMesh_y35fo")
 
 [node name="FadeWall3D2" type="FadeWall3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 2, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FadeWall3D2"]
 mesh = SubResource("BoxMesh_k5nj1")
@@ -177,7 +177,7 @@ surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
 shape = SubResource("BoxShape3D_qdlsv")
 
 [node name="FadeWall3D4" type="FadeWall3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 5, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FadeWall3D4"]
 mesh = SubResource("BoxMesh_k5nj1")
@@ -187,7 +187,7 @@ surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
 shape = SubResource("BoxShape3D_qdlsv")
 
 [node name="FadeFloor" type="FadeFloor3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3.5, -4)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FadeFloor"]
 mesh = SubResource("BoxMesh_e7laa")
@@ -196,7 +196,7 @@ mesh = SubResource("BoxMesh_e7laa")
 shape = SubResource("BoxShape3D_vo2n0")
 
 [node name="FadeFloor3" type="FadeFloor3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.5, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 7.5, -4)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FadeFloor3"]
 mesh = SubResource("BoxMesh_e7laa")
@@ -214,11 +214,11 @@ mesh = SubResource("BoxMesh_wrn47")
 shape = SubResource("BoxShape3D_vo2n0")
 
 [node name="FadeObj" type="MeshInstance3D" parent="." groups=["fade_obj"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1549144, 4, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15491438, 4, -6)
 mesh = SubResource("PrismMesh_0o580")
 
 [node name="FadeObj2" type="MeshInstance3D" parent="." groups=["fade_obj"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.0452328, 4, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.045233, 4, -6)
 mesh = SubResource("CylinderMesh_2py3s")
 skeleton = NodePath("../FadeObj")
 

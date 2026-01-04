@@ -59,7 +59,7 @@ void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target, float ma
     s_last_lowest_floor_height = s_lowest_floor_height;
     s_lowest_floor_height = 9999.0f;
     Array objs = tree->get_nodes_in_group("fade_floor");
-    float xzdist = -1.0f;
+    float xzdist = 9999.0f;
     for (int i = 0; i < objs.size(); i++) {
         FadeFloor3D *floor = Object::cast_to<FadeFloor3D>(objs[i]);
         if (!floor) {
@@ -69,9 +69,10 @@ void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target, float ma
         if(pos.y < tp.y) {
             continue;
         }
-        if(pos.y < s_lowest_floor_height) {
+        float newxz = get_xz_dist(tp, floor->_aabb_min, floor->_aabb_max);
+        if(pos.y <= s_lowest_floor_height && newxz < xzdist) {
             s_lowest_floor_height = pos.y;
-            xzdist = get_xz_dist(tp, floor->_aabb_min, floor->_aabb_max);
+            xzdist = newxz;
         }
     }
 
