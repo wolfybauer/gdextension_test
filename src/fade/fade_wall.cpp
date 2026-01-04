@@ -2,7 +2,7 @@
 #include "fade/geometry.hpp"
 
 #include "godot_cpp/classes/engine.hpp"
-#include "godot_cpp/classes/scene_tree.hpp"
+// #include "godot_cpp/classes/scene_tree.hpp"
 // #include "godot_cpp/classes/resource_loader.hpp"
 #include "godot_cpp/classes/camera3d.hpp"
 #include "godot_cpp/classes/mesh.hpp"
@@ -100,8 +100,16 @@ void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, 
             _fade_target = 1.0f;
         }
     } else {
-        UtilityFunctions::push_error("[FadeWall] ", get_name(), " check_fade : unsupported camera type");
+        UtilityFunctions::push_error("[FadeWall3D] ", get_name(), " check_fade : unsupported camera type");
     }
+}
+
+void FadeWall3D::check_fade_walls(SceneTree * tree, Node3D * target, Camera3D * camera, float max_dist, float fade_speed, float min_alpha) {
+    if(!tree || !target || !camera) {
+        UtilityFunctions::push_error("[FadeWall3D] check_fade_walls : tree or target or camera is null. abort");
+        return;
+    }
+    tree->call_group("fade_wall", "check_fade", target, camera, max_dist, fade_speed, min_alpha);
 }
 
 void FadeWall3D::_on_ready() {
@@ -117,7 +125,7 @@ void FadeWall3D::_on_ready() {
         }
     }
     if(mesh_inst == nullptr) {
-        UtilityFunctions::push_error("[FadeWall] ", get_name(), " _on_ready : MeshInstance3D not found. abort");
+        UtilityFunctions::push_error("[FadeWall3D] ", get_name(), " _on_ready : MeshInstance3D not found. abort");
         return;
     }
 
@@ -144,7 +152,7 @@ void fragment() {
     )");
     _fade_mat->set_shader(_fade_shader);
     if(!_fade_mat.is_valid()) {
-        UtilityFunctions::push_error("[FadeWall] ", get_name(), "_on_ready : _fade_mat invalid. abort");
+        UtilityFunctions::push_error("[FadeWall3D] ", get_name(), "_on_ready : _fade_mat invalid. abort");
         return;
     }
 
@@ -206,6 +214,7 @@ void FadeWall3D::_notification(int p_what) {
 
 void FadeWall3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("check_fade", "target", "camera", "max_dist", "fade_speed", "min_alpha"), &FadeWall3D::check_fade);
+    ClassDB::bind_static_method("FadeWall3D", D_METHOD("check_fade_walls", "tree", "target", "camera", "max_dist", "fade_speed", "min_alpha"), &FadeWall3D::check_fade_walls);
     
     ClassDB::bind_method(D_METHOD("set_global_render_priority", "lvl"), &FadeWall3D::set_global_render_priority);
     ClassDB::bind_method(D_METHOD("get_global_render_priority"), &FadeWall3D::get_global_render_priority);

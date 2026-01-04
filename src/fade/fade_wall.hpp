@@ -1,14 +1,15 @@
 #pragma once
 
 #include "godot_cpp/classes/shader_material.hpp"
+#include "godot_cpp/classes/scene_tree.hpp"
+#include "godot_cpp/classes/node3d.hpp"
+#include "godot_cpp/classes/camera3d.hpp"
 #include "godot_cpp/classes/static_body3d.hpp"
 #include "godot_cpp/variant/vector2.hpp"
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
-class Node3D;
-class Camer3D;
 
 namespace godot {
 
@@ -21,6 +22,7 @@ public:
     void _notification(int p_what);
 
     void check_fade(Node3D * target, Camera3D * camera, float max_dist=3.0f, float fade_speed=5.0f, float min_alpha=0.25f);
+    static void check_fade_walls(SceneTree * tree, Node3D * target, Camera3D * camera, float max_dist=3.0f, float fade_speed=5.0f, float min_alpha=0.25f);
 
     
     void set_global_y_margin(float m);

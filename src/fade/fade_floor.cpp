@@ -7,6 +7,7 @@
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/object.hpp"
 #include "godot_cpp/core/math.hpp"
+#include "godot_cpp/variant/utility_functions.hpp"
 #include "godot_cpp/variant/vector2.hpp"
 #include "godot_cpp/variant/vector3.hpp"
 
@@ -48,7 +49,16 @@ void FadeFloor3D::check_fade(Node3D * target, float max_dist) {
     set_visible(false);
 }
 
-void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target, float max_dist) {
+void FadeFloor3D::check_fade_floors(SceneTree * tree, Node3D * target, float max_dist) {
+    if(!tree || !target) {
+        UtilityFunctions::push_error("[FadeFloor3D] check_fade_floors : tree or target is null. abort");
+        return;
+    }
+    tree->call_group("fade_floor", "check_fade", target, max_dist);
+}
+
+
+void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target) {
     if(!tree || !target) {
         UtilityFunctions::push_error("[FadeFloor3D] check_fade_objects : tree or target is null. abort");
         return;
@@ -86,12 +96,7 @@ void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target, float ma
         }
 
         Vector3 fp = fo->get_global_position();
-        // if (max_dist > 0.0f) {
-        //     if(Vector2(tp.x, tp.z).distance_to(Vector2(fp.x, fp.z)) > max_dist) {
-        //         continue;
-        //     }
-        // }
-
+        
         if(fp.y > s_lowest_floor_height) {
             fo->set_visible(false);
         } else {
@@ -139,6 +144,7 @@ void FadeFloor3D::_notification(int p_what) {
 void FadeFloor3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("check_fade", "target", "max_dist"), &FadeFloor3D::check_fade);
     ClassDB::bind_static_method("FadeFloor3D", D_METHOD("check_fade_objects", "tree", "target"), &FadeFloor3D::check_fade_objects);
+    ClassDB::bind_static_method("FadeFloor3D", D_METHOD("check_fade_floors", "tree", "target", "max_dist"), &FadeFloor3D::check_fade_floors);
     
     ClassDB::bind_method(D_METHOD("set_global_y_margin", "height"), &FadeFloor3D::set_global_y_margin);
     ClassDB::bind_method(D_METHOD("get_global_y_margin"), &FadeFloor3D::get_global_y_margin);
