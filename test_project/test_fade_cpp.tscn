@@ -1,11 +1,15 @@
-[gd_scene load_steps=20 format=3 uid="uid://7v8njv71gxsh"]
+[gd_scene load_steps=26 format=3 uid="uid://7v8njv71gxsh"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_qdlsv"]
 [ext_resource type="Script" uid="uid://c6bw5h615kxf" path="res://test_fade_cpp.gd" id="1_rqttx"]
-[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://woodcrate.jpg" id="3_vqdp2"]
+[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://misc/woodcrate.jpg" id="3_vqdp2"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rqttx"]
 albedo_texture = ExtResource("1_qdlsv")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qdlsv"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_rqttx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qdlsv"]
 size = Vector3(3, 3, 1)
@@ -56,10 +60,6 @@ shader_parameter/use_texture = true
 shader_parameter/albedo_tex = ExtResource("3_vqdp2")
 shader_parameter/albedo_color = Color(1, 1, 1, 1)
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_qdlsv"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_rqttx"]
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k5nj1"]
 albedo_color = Color(1, 1, 0.43137255, 1)
 
@@ -68,13 +68,32 @@ material = SubResource("StandardMaterial3D_k5nj1")
 size = Vector3(6, 0.1, 8)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_vo2n0"]
-size = Vector3(6, 0.1, 8)
+size = Vector3(3, 0.1, 8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vo2n0"]
+albedo_color = Color(1, 1, 0.43137255, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wrn47"]
+material = SubResource("StandardMaterial3D_vo2n0")
+size = Vector3(3, 0.1, 8)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vqdp2"]
 albedo_color = Color(0.27450982, 0.21568628, 0.21568628, 1)
 
 [sub_resource type="PrismMesh" id="PrismMesh_0o580"]
 material = SubResource("StandardMaterial3D_vqdp2")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0o580"]
+albedo_color = Color(0.87058824, 0.32156864, 0.23921569, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_2py3s"]
+material = SubResource("StandardMaterial3D_0o580")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y35fo"]
+albedo_color = Color(0.5294118, 1, 0.7058824, 1)
+
+[sub_resource type="TorusMesh" id="TorusMesh_wrn47"]
+material = SubResource("StandardMaterial3D_y35fo")
 
 [node name="Test_FadeCPP" type="Node3D"]
 script = ExtResource("1_rqttx")
@@ -111,13 +130,23 @@ shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(0.8660254, -0.26717615, 0.42263094, 0, 0.84526193, 0.5343523, -0.5, -0.46276268, 0.73201823, 7, 10, 10)
-projection = 1
 size = 5.0
 
 [node name="Floor" type="CSGBox3D" parent="."]
 use_collision = true
 size = Vector3(20, 0, 20)
 material = SubResource("StandardMaterial3D_rqttx")
+
+[node name="Player" type="AnimatableBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -1.2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_qdlsv")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_rqttx")
 
 [node name="FadeWall3D" type="FadeWall3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2, 0)
@@ -157,17 +186,6 @@ surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FadeWall3D4"]
 shape = SubResource("BoxShape3D_qdlsv")
 
-[node name="Player" type="AnimatableBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -1.2)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-shape = SubResource("CapsuleShape3D_qdlsv")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_rqttx")
-
 [node name="FadeFloor" type="FadeFloor3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -4)
 
@@ -177,6 +195,34 @@ mesh = SubResource("BoxMesh_e7laa")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FadeFloor"]
 shape = SubResource("BoxShape3D_vo2n0")
 
+[node name="FadeFloor3" type="FadeFloor3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.5, -4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FadeFloor3"]
+mesh = SubResource("BoxMesh_e7laa")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FadeFloor3"]
+shape = SubResource("BoxShape3D_vo2n0")
+
+[node name="FadeFloor2" type="FadeFloor3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.0962715, 3.5, -4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FadeFloor2"]
+mesh = SubResource("BoxMesh_wrn47")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FadeFloor2"]
+shape = SubResource("BoxShape3D_vo2n0")
+
 [node name="FadeObj" type="MeshInstance3D" parent="." groups=["fade_obj"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1549144, 4, -6)
 mesh = SubResource("PrismMesh_0o580")
+
+[node name="FadeObj2" type="MeshInstance3D" parent="." groups=["fade_obj"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.0452328, 4, -6)
+mesh = SubResource("CylinderMesh_2py3s")
+skeleton = NodePath("../FadeObj")
+
+[node name="FaeObj3" type="MeshInstance3D" parent="." groups=["fade_obj"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.978734, 4, -6)
+mesh = SubResource("TorusMesh_wrn47")
+skeleton = NodePath("../FadeObj2")

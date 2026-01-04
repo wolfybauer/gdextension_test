@@ -1,9 +1,10 @@
-[gd_scene load_steps=12 format=3 uid="uid://blkpvcwih8j7w"]
+[gd_scene load_steps=13 format=3 uid="uid://blkpvcwih8j7w"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_pfxp3"]
 [ext_resource type="Script" uid="uid://u25egtqimtef" path="res://test_fire_cpp.gd" id="1_u3ega"]
-[ext_resource type="Material" uid="uid://bfdrni2qgdlhy" path="res://glass_material.tres" id="3_naox4"]
-[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://woodcrate.jpg" id="3_u3ega"]
+[ext_resource type="Material" uid="uid://bfdrni2qgdlhy" path="res://misc/glass_material.tres" id="3_naox4"]
+[ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://misc/woodcrate.jpg" id="3_u3ega"]
+[ext_resource type="Script" uid="uid://b7q6w1uv4wrbd" path="res://misc/throw_point.gd" id="6_p2wxh"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hbvx4"]
 albedo_texture = ExtResource("1_pfxp3")
@@ -42,19 +43,47 @@ size = Vector3(20, 0, 20)
 material = SubResource("StandardMaterial3D_hbvx4")
 
 [node name="Primitive" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9240794, 3, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1392822, 0, 0)
 mesh = SubResource("BoxMesh_hbvx4")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive"]
 shape = SubResource("BoxShape3D_naox4")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="Primitive"]
-torch = true
-max_hp = -1
+resolution = Vector3i(2, 2, 2)
 
 [node name="DestronoiNode" type="DestronoiNode" parent="Primitive"]
+
+[node name="Primitive2" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9297175, 3, 1.3507483)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive2"]
+mesh = SubResource("BoxMesh_hbvx4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive2"]
+shape = SubResource("BoxShape3D_naox4")
+
+[node name="FireComponent3D" type="FireComponent3D" parent="Primitive2"]
+resolution = Vector3i(2, 2, 2)
+
+[node name="DestronoiNode" type="DestronoiNode" parent="Primitive2"]
+
+[node name="Primitive3" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9240794, 3, 2.730787)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive3"]
+mesh = SubResource("BoxMesh_hbvx4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive3"]
+shape = SubResource("BoxShape3D_naox4")
+
+[node name="FireComponent3D" type="FireComponent3D" parent="Primitive3"]
+resolution = Vector3i(2, 2, 2)
+
+[node name="DestronoiNode" type="DestronoiNode" parent="Primitive3"]
 
 [node name="FakeConvex" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
@@ -69,8 +98,34 @@ shape = SubResource("ConvexPolygonShape3D_hbvx4")
 
 [node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex"]
 
+[node name="FakeConvex2" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 1.2619135)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex2"]
+mesh = SubResource("BoxMesh_hbvx4")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex2"]
+shape = SubResource("ConvexPolygonShape3D_hbvx4")
+
+[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex2"]
+
+[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex2"]
+
+[node name="FakeConvex3" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 2.5367706)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex3"]
+mesh = SubResource("BoxMesh_hbvx4")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex3"]
+shape = SubResource("ConvexPolygonShape3D_hbvx4")
+
+[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex3"]
+
+[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex3"]
+
 [node name="RealConvex" type="RigidBody3D" parent="."]
-transform = Transform3D(0.25881907, -0.9659258, 0, 0.9659258, 0.25881907, 0, 0, 0, 1, 7.756995, 3, 0)
+transform = Transform3D(0.25881907, -0.9659258, 0, 0.9659258, 0.25881907, 0, 0, 0, 1, -0.4208145, 5.5033073, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="RealConvex"]
 mesh = SubResource("CylinderMesh_naox4")
@@ -79,5 +134,14 @@ mesh = SubResource("CylinderMesh_naox4")
 shape = SubResource("ConvexPolygonShape3D_u3ega")
 
 [node name="FireComponent3D" type="FireComponent3D" parent="RealConvex"]
+torch = true
+max_hp = -1
 
 [node name="DestronoiNode" type="DestronoiNode" parent="RealConvex"]
+
+[node name="ThrowPoint" type="Node3D" parent="."]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 1, 0.1, 0)
+visible = false
+script = ExtResource("6_p2wxh")
+marker_tex = ExtResource("1_pfxp3")
+metadata/_custom_type_script = "uid://b7q6w1uv4wrbd"

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c81iotohi34fn"
-path.s3tc="res://.godot/imported/woodcrate.jpg-6e3eb48adff17293634779de70b2fee5.s3tc.ctex"
+path.s3tc="res://.godot/imported/woodcrate.jpg-2d1101a3d4fec62435fbb0d8f3cb1a7a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://woodcrate.jpg"
-dest_files=["res://.godot/imported/woodcrate.jpg-6e3eb48adff17293634779de70b2fee5.s3tc.ctex"]
+source_file="res://misc/woodcrate.jpg"
+dest_files=["res://.godot/imported/woodcrate.jpg-2d1101a3d4fec62435fbb0d8f3cb1a7a.s3tc.ctex"]
 
 [params]
 

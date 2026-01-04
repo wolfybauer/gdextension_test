@@ -10,6 +10,7 @@
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+#define FADE_SHADER_PATH "res://gde_test/assets/fade.gdshader"
 
 namespace godot {
 

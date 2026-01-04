@@ -3,11 +3,12 @@
 
 #include "godot_cpp/classes/engine.hpp"
 // #include "godot_cpp/classes/scene_tree.hpp"
-// #include "godot_cpp/classes/resource_loader.hpp"
+#include "godot_cpp/classes/resource_loader.hpp"
 #include "godot_cpp/classes/camera3d.hpp"
 #include "godot_cpp/classes/mesh.hpp"
 #include "godot_cpp/classes/mesh_instance3d.hpp"
 #include "godot_cpp/classes/object.hpp"
+#include "godot_cpp/classes/resource_loader.hpp"
 #include "godot_cpp/classes/standard_material3d.hpp"
 // #include "godot_cpp/classes/texture2d_array.hpp"
 #include "godot_cpp/core/math.hpp"
@@ -130,26 +131,30 @@ void FadeWall3D::_on_ready() {
     }
 
     _fade_mat.instantiate();
-    _fade_shader.instantiate();
-    _fade_shader->set_code(R"(
-shader_type spatial;
-// render_mode blend_mix, depth_draw_alpha_prepass;
+    _fade_shader = ResourceLoader::get_singleton()->load(FADE_SHADER_PATH);
+    if(!_fade_shader.is_valid()) {
+        UtilityFunctions::push_error("[FadeWall3D] ", get_name(), " _on_ready : error loading shader. abort");
+        return;
+    }
+//     _fade_shader->set_code(R"(
+// shader_type spatial;
+// // render_mode blend_mix, depth_draw_alpha_prepass;
 
-uniform float opacity : hint_range(0.0, 1.0) = 1.0;
+// uniform float opacity : hint_range(0.0, 1.0) = 1.0;
 
-uniform bool use_texture = false;
-uniform sampler2D albedo_tex : source_color;
-uniform vec4 albedo_color : source_color = vec4(1.0);
+// uniform bool use_texture = false;
+// uniform sampler2D albedo_tex : source_color;
+// uniform vec4 albedo_color : source_color = vec4(1.0);
 
-void fragment() {
-    vec4 base = use_texture
-        ? texture(albedo_tex, UV)
-        : albedo_color;
+// void fragment() {
+//     vec4 base = use_texture
+//         ? texture(albedo_tex, UV)
+//         : albedo_color;
 
-    ALBEDO = base.rgb;
-    ALPHA  = opacity;
-}
-    )");
+//     ALBEDO = base.rgb;
+//     ALPHA  = opacity;
+// }
+//     )");
     _fade_mat->set_shader(_fade_shader);
     if(!_fade_mat.is_valid()) {
         UtilityFunctions::push_error("[FadeWall3D] ", get_name(), "_on_ready : _fade_mat invalid. abort");

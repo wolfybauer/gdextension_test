@@ -11,7 +11,7 @@ var paused:bool = false
 
 func set_cam_persp():
 	camera_3d.projection = Camera3D.PROJECTION_PERSPECTIVE
-	camera_3d.global_position = Vector3(5.0,5.0,5.0)
+	camera_3d.global_position = Vector3(8.0,12.0,10.0)
 	camera_3d.global_rotation_degrees = Vector3(-32.3,30.0,0.0)
 	cam_toggle.text = "PERSP"
 
@@ -19,7 +19,7 @@ func set_cam_iso():
 	camera_3d.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera_3d.global_position = Vector3(7.0,10.0,10.0)
 	camera_3d.global_rotation_degrees = Vector3(-32.3,30.0,0.0)
-	camera_3d.size = 10
+	camera_3d.size = 12
 	cam_toggle.text = "ORTHO"
 
 func toggle_paused():
@@ -54,7 +54,7 @@ func _process(_delta: float) -> void:
 	#get_tree().call_group('fade_wall', 'check_fade', player, camera_3d, 1.5, 5.0, 0.25)
 	FadeWall3D.check_fade_walls(tree, player, camera_3d, 1.5, 5.0, 0.25)
 	FadeFloor3D.check_fade_floors(tree, player, 2.0)
-	FadeFloor3D.check_fade_objects(tree, player, 2.0)
+	FadeFloor3D.check_fade_objects(tree, player, 2.7)
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed('ui_cancel'):

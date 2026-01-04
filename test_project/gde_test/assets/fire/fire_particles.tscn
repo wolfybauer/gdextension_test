@@ -9,9 +9,10 @@ shading_mode = 2
 diffuse_mode = 3
 specular_mode = 2
 vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 0.3137255)
 albedo_texture = ExtResource("1_7wxyp")
 emission_enabled = true
-emission = Color(0.58513117, 0.31328422, 0, 1)
+emission = Color(0.58431375, 0.05882353, 0, 1)
 emission_energy_multiplier = 5.0
 billboard_mode = 3
 particles_anim_h_frames = 4
@@ -55,29 +56,29 @@ particles_anim_h_frames = 4
 particles_anim_v_frames = 4
 particles_anim_loop = false
 
-[sub_resource type="Gradient" id="Gradient_7wxyp"]
+[sub_resource type="Gradient" id="Gradient_l36lw"]
 offsets = PackedFloat32Array(0, 0.48120302, 1)
 colors = PackedColorArray(0, 0, 0, 0, 0.31203008, 0.31203008, 0.31203008, 1, 1, 1, 1, 0)
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_xume0"]
-gradient = SubResource("Gradient_7wxyp")
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_5w3nt"]
+gradient = SubResource("Gradient_l36lw")
 
-[sub_resource type="Curve" id="Curve_4touq"]
+[sub_resource type="Curve" id="Curve_uexri"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="CurveTexture" id="CurveTexture_by1ht"]
-curve = SubResource("Curve_4touq")
+[sub_resource type="CurveTexture" id="CurveTexture_81fhx"]
+curve = SubResource("Curve_uexri")
 
-[sub_resource type="Curve" id="Curve_svl11"]
+[sub_resource type="Curve" id="Curve_qe6ln"]
 _limits = [0.0, 3.0, 0.0, 1.0]
 _data = [Vector2(0, 3), 0.0, 0.0, 0, 0, Vector2(1, 0.16854), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="CurveTexture" id="CurveTexture_srqyl"]
-curve = SubResource("Curve_svl11")
+[sub_resource type="CurveTexture" id="CurveTexture_b6wgn"]
+curve = SubResource("Curve_qe6ln")
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_4touq"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ljmm6"]
 lifetime_randomness = 1.0
 direction = Vector3(0, 1, 0)
 spread = 30.0
@@ -86,10 +87,10 @@ initial_velocity_max = 2.0
 gravity = Vector3(0, 1, 0)
 scale_min = 3.0
 scale_max = 4.0
-scale_curve = SubResource("CurveTexture_by1ht")
+scale_curve = SubResource("CurveTexture_81fhx")
 scale_over_velocity_max = 0.04
-scale_over_velocity_curve = SubResource("CurveTexture_srqyl")
-color_ramp = SubResource("GradientTexture1D_xume0")
+scale_over_velocity_curve = SubResource("CurveTexture_b6wgn")
+color_ramp = SubResource("GradientTexture1D_5w3nt")
 anim_speed_min = 0.39999998
 anim_speed_max = 0.39999998
 anim_offset_min = 0.19999999
@@ -113,5 +114,5 @@ ignore_occlusion_culling = true
 amount = 7
 lifetime = 1.5
 randomness = 0.2
-process_material = SubResource("ParticleProcessMaterial_4touq")
+process_material = SubResource("ParticleProcessMaterial_ljmm6")
 draw_pass_1 = SubResource("QuadMesh_7wxyp")
