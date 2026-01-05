@@ -4,7 +4,10 @@ compatibility_minimum = "4.5"
 
 [icons]
 
-DestronoiNode = "res://addons/gde_test/assets/destronoi/destronoi_icon.svg"
+DestronoiNode = "res://gde_test/assets/destronoi/destronoi_icon.svg"
+FireComponent3D = "res://gde_test/assets/fire/fire_icon.svg"
+FadeWall3D = "res://gde_test/assets/fade_wall_icon.svg"
+FadeFloor3D = "res://gde_test/assets/fade_floor_icon.svg"
 
 [libraries]
 ; Relative paths ensure that our GDExtension can be placed anywhere in the project directory.
