@@ -26,6 +26,7 @@ public:
     void _notification(int p_what);
 
     void move_and_slide();
+    virtual Vector3 modify_move_force(Vector3 force);
 
     bool is_on_ceiling() { return _is_on_ceiling; }
     bool is_on_ceiling_only() { return _is_on_ceiling && !(_is_on_floor || _is_on_wall); }

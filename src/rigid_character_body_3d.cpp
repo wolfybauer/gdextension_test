@@ -126,7 +126,7 @@ void RigidCharacterBody3D::move_and_slide() {
     Vector3 move_force = move_mag * target_velocity.normalized();
     float target_speed = target_velocity.length();
 
-    // TODO: modify move force here?
+    move_force = modify_move_force(move_force);
 
     if(_is_on_floor) {
         if(_floor_normal.is_normalized() && move_force.normalized().dot(_floor_normal) > 0.1f) {
@@ -146,10 +146,21 @@ void RigidCharacterBody3D::move_and_slide() {
     apply_force(move_force + drag_force);
 }
 
+Vector3 RigidCharacterBody3D::modify_move_force(Vector3 force) {
+    if (has_method("_modify_move_force")) {
+        Variant ret = call("_modify_move_force", force);
+        if (ret.get_type() == Variant::VECTOR3) {
+            return ret;
+        }
+    }
+    return force;
+}
+
 
 void RigidCharacterBody3D::_bind_methods() {
 	// methods
 	ClassDB::bind_method(D_METHOD("move_and_slide"), &RigidCharacterBody3D::move_and_slide);
+    // ClassDB::bind_method(D_METHOD("_modify_move_force", "force"), &RigidCharacterBody3D::modify_move_force);
 
 	ClassDB::bind_method(D_METHOD("is_on_ceiling"), &RigidCharacterBody3D::is_on_ceiling);
 	ClassDB::bind_method(D_METHOD("is_on_ceiling_only"), &RigidCharacterBody3D::is_on_ceiling_only);

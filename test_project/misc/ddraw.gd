@@ -51,6 +51,8 @@ func draw_line(from:Vector3, to:Vector3, thickness:float=2.0, color:Color=Color.
 	
 	var vertex:Vector3
 	for v in range(len(strip_order)):
+		#if mesh.get_surface_count() == RenderingServer.MAX_MESH_SURFACES:
+			#break
 		if strip_order[v] < 4: vertex = normal
 		else: vertex = normal + local_b
 		vertex = vertex.rotated(dir, PI * (0.5 * (strip_order[v] % 4) + 0.25))

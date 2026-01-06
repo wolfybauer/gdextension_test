@@ -1,9 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://btie6prf2escd"]
+[gd_scene load_steps=6 format=3 uid="uid://btie6prf2escd"]
 
 [ext_resource type="Texture2D" uid="uid://ctbikqrwex2n" path="res://misc/textures/pack2/Tile/Tile_08-128x128.png" id="1_r2f6b"]
+[ext_resource type="Script" uid="uid://bdlckjpuip3aj" path="res://rigid_player.gd" id="2_3a07p"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3a07p"]
 albedo_texture = ExtResource("1_r2f6b")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_r2f6b"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_3a07p"]
 
 [node name="test_interactCPP" type="Node3D"]
 
@@ -17,7 +22,18 @@ use_collision = true
 size = Vector3(20, 0.1, 20)
 material = SubResource("StandardMaterial3D_3a07p")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.7466382, -0.38865116, 0.5398904, 0, 0.8115842, 0.5842355, -0.66523033, -0.4362125, 0.6059597, 3.9913907, 4.0886517, 4.695607)
-
 [node name="RigidCharacterBody3D" type="RigidCharacterBody3D" parent="."]
+script = ExtResource("2_3a07p")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidCharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_r2f6b")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidCharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_3a07p")
+
+[node name="CameraPivot" type="Node3D" parent="RigidCharacterBody3D"]
+
+[node name="Camera3D" type="Camera3D" parent="RigidCharacterBody3D/CameraPivot"]
+transform = Transform3D(0.7466382, -0.3886512, 0.53989047, 0, 0.81158423, 0.5842355, -0.66523033, -0.43621254, 0.6059598, 3.9913907, 4.0886517, 4.695607)
