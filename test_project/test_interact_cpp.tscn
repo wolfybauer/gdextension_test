@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://btie6prf2escd"]
+
+[ext_resource type="Texture2D" uid="uid://ctbikqrwex2n" path="res://misc/textures/pack2/Tile/Tile_08-128x128.png" id="1_r2f6b"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3a07p"]
+albedo_texture = ExtResource("1_r2f6b")
+
+[node name="test_interactCPP" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 8.108754, 0)
+shadow_enabled = true
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+use_collision = true
+size = Vector3(20, 0.1, 20)
+material = SubResource("StandardMaterial3D_3a07p")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.7466382, -0.38865116, 0.5398904, 0, 0.8115842, 0.5842355, -0.66523033, -0.4362125, 0.6059597, 3.9913907, 4.0886517, 4.695607)
+
+[node name="RigidCharacterBody3D" type="RigidCharacterBody3D" parent="."]

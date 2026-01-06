@@ -1,9 +1,9 @@
 // Include your classes, that you want to expose to Godot
-// #include "vst_node.hpp"
 #include "destronoi.hpp"
 #include "fire.hpp"
 #include "fade/fade_wall.hpp"
 #include "fade/fade_floor.hpp"
+#include "rigid_character_body_3d.hpp"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -24,6 +24,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(FireComponent3D)
 	GDREGISTER_CLASS(FadeWall3D)
 	GDREGISTER_CLASS(FadeFloor3D)
+	GDREGISTER_CLASS(RigidCharacterBody3D)
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
