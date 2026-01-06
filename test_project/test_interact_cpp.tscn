@@ -1,14 +1,24 @@
-[gd_scene load_steps=6 format=3 uid="uid://btie6prf2escd"]
+[gd_scene load_steps=11 format=3 uid="uid://btie6prf2escd"]
 
 [ext_resource type="Texture2D" uid="uid://ctbikqrwex2n" path="res://misc/textures/pack2/Tile/Tile_08-128x128.png" id="1_r2f6b"]
 [ext_resource type="Script" uid="uid://bdlckjpuip3aj" path="res://rigid_player.gd" id="2_3a07p"]
+[ext_resource type="PackedScene" uid="uid://ccf670c6bkob8" path="res://addons/srcoder_thirdperson_controller/assets/character-male-e.glb" id="3_1vpso"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3a07p"]
 albedo_texture = ExtResource("1_r2f6b")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_r2f6b"]
+height = 1.3745117
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_3a07p"]
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_3a07p"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3a07p"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1vpso"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_3a07p"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_1vpso"]
 
 [node name="test_interactCPP" type="Node3D"]
 
@@ -24,16 +34,45 @@ material = SubResource("StandardMaterial3D_3a07p")
 
 [node name="RigidCharacterBody3D" type="RigidCharacterBody3D" parent="."]
 script = ExtResource("2_3a07p")
+jump_cut = 0.05
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RigidCharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68725586, 0)
 shape = SubResource("CapsuleShape3D_r2f6b")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidCharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_3a07p")
 
 [node name="CameraPivot" type="Node3D" parent="RigidCharacterBody3D"]
 
 [node name="Camera3D" type="Camera3D" parent="RigidCharacterBody3D/CameraPivot"]
 transform = Transform3D(0.7466382, -0.3886512, 0.53989047, 0, 0.81158423, 0.5842355, -0.66523033, -0.43621254, 0.6059598, 3.9913907, 4.0886517, 4.695607)
+
+[node name="playermodel" type="Node3D" parent="RigidCharacterBody3D"]
+
+[node name="character-male-e2" parent="RigidCharacterBody3D/playermodel" instance=ExtResource("3_1vpso")]
+transform = Transform3D(-2, 0, -3.019916e-07, 0, 2, 0, 3.019916e-07, 0, -2, 0, 0.0071882, 0)
+
+[node name="Skeleton3D" parent="RigidCharacterBody3D/playermodel/character-male-e2/character-male-e" index="0"]
+bones/4/rotation = Quaternion(0, 0, -0.382683, 0.92388)
+bones/5/rotation = Quaternion(0, 0, 0.382683, 0.92388)
+
+[node name="RigidBody3D" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -2)
+mass = 200.0
+physics_material_override = SubResource("PhysicsMaterial_3a07p")
+linear_damp = 0.1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
+shape = SubResource("BoxShape3D_3a07p")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D"]
+mesh = SubResource("BoxMesh_1vpso")
+
+[node name="RigidBody3D2" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D2"]
+shape = SubResource("SphereShape3D_3a07p")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D2"]
+mesh = SubResource("SphereMesh_1vpso")
+
+[editable path="RigidCharacterBody3D/playermodel/character-male-e2"]

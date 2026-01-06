@@ -3,17 +3,24 @@ extends RigidCharacterBody3D
 const ROTATION_SPEED := 6.0 
 
 @export var speed := 8.0
-@export var damp:float = 10.0
+@export var damp:float = 15.0
 @export var jump_height: float = 2.0
+@export_range(0.05, 0.6, 0.05) var jump_cut:float = 0.1
+@export_range(1.0, 20.0, 1.0) var rotation_speed:float = 7.0
 
 const SMOOTH_ACCELERATION_CURVE = preload("res://smooth_acceleration_curve.tres")
 
 @onready var camera_pivot: Node3D = $CameraPivot
 @onready var camera_3d: Camera3D = $CameraPivot/Camera3D
+@onready var playermodel : Node3D = $playermodel
+@onready var animation_player : AnimationPlayer = $"playermodel/character-male-e2/AnimationPlayer"
 
 var direction:Vector3
 var _wants_to_jump:bool = false
 var _jump_released:bool = false
+
+enum animation_state {IDLE,RUNNING,JUMPING}
+var player_animation_state : animation_state = animation_state.IDLE
 
 func _ready() -> void:
 	mass = 60.0
@@ -33,7 +40,7 @@ func _input(event):
 	if event.is_action_released("ui_accept"):
 		_jump_released = true
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	linear_damp = 0.0
 
 	# Get the input direction and handle the movement/deceleration.
@@ -45,24 +52,34 @@ func _physics_process(_delta: float) -> void:
 		target_velocity.z = lerp(target_velocity.z, direction.z * speed, 0.1)
 		
 		##now rotate the model
-		#if direction:
-			#rotate_model(direction, delta)
-			#player_animation_state = animation_state.RUNNING
+		if direction:
+			rotate_model(direction, delta)
+			player_animation_state = animation_state.RUNNING
 	else:
 		if is_on_floor():
 			linear_damp = damp
 		target_velocity.x = 0.0
 		target_velocity.z = 0.0
-		#player_animation_state = animation_state.IDLE
+		player_animation_state = animation_state.IDLE
 	
-	#if not is_on_floor():
-		#player_animation_state = animation_state.JUMPING
+	if not is_on_floor():
+		player_animation_state = animation_state.JUMPING
+
 	if _jump_released and linear_velocity.dot(up_direction) > 0.0:
 		var lv:Vector3 = linear_velocity
-		lv -= up_direction * linear_velocity.dot(up_direction) * 0.1
+		lv -= up_direction * linear_velocity.dot(up_direction) * jump_cut
 		linear_velocity = lv
 
 	move_and_slide()
+
+	# update animation
+	match player_animation_state:
+		animation_state.IDLE:
+			animation_player.play("idle")
+		animation_state.RUNNING:
+			animation_player.play("sprint")
+		animation_state.JUMPING:
+			animation_player.play("jump")
 
 func _modify_move_force(move_force:Vector3) -> Vector3:
 	var horizontal_velocity: Vector3 = Vector3(linear_velocity.x, 0.0, linear_velocity.z)
@@ -77,3 +94,8 @@ func _modify_move_force(move_force:Vector3) -> Vector3:
 		move_force.z *= SMOOTH_ACCELERATION_CURVE.sample(z_offset)
 	
 	return move_force
+
+func rotate_model(dir: Vector3, delta : float) -> void:
+	#rotate the model to match the springarm
+	#playermodel.basis = lerp(playermodel.basis, Basis.looking_at(dir), 5.0 * delta)
+	playermodel.basis = lerp(playermodel.basis, Basis.looking_at(dir), rotation_speed * delta)
