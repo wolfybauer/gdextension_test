@@ -40,6 +40,8 @@ public:
     void set_priority_override_enable(bool m);
     bool get_priority_override_enable() const;
 
+    void set_opacity(float op);
+
 protected:
     static void _bind_methods();
 

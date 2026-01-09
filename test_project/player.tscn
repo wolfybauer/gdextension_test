@@ -1,0 +1,33 @@
+[gd_scene load_steps=4 format=3 uid="uid://ns83tkhuhje1"]
+
+[ext_resource type="Script" uid="uid://bdlckjpuip3aj" path="res://rigid_player.gd" id="1_onrkg"]
+[ext_resource type="PackedScene" uid="uid://ccf670c6bkob8" path="res://addons/srcoder_thirdperson_controller/assets/character-male-e.glb" id="2_i3pqv"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_r2f6b"]
+height = 1.3745117
+
+[node name="Player" type="RigidCharacterBody3D"]
+neck_height = 0.6
+script = ExtResource("1_onrkg")
+jump_cut = 0.05
+grab_distance = 1.5
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68725586, 0)
+shape = SubResource("CapsuleShape3D_r2f6b")
+
+[node name="CameraPivot" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot"]
+transform = Transform3D(0.7466382, -0.3886512, 0.53989047, 0, 0.81158423, 0.5842355, -0.66523033, -0.43621254, 0.6059598, 3.9913907, 4.0886517, 4.695607)
+
+[node name="playermodel" type="Node3D" parent="."]
+
+[node name="character-male-e2" parent="playermodel" instance=ExtResource("2_i3pqv")]
+transform = Transform3D(-2, 0, -3.019916e-07, 0, 2, 0, 3.019916e-07, 0, -2, 0, 0.0071882, 0)
+
+[node name="Skeleton3D" parent="playermodel/character-male-e2/character-male-e" index="0"]
+bones/4/rotation = Quaternion(0, 0, -0.382683, 0.92388)
+bones/5/rotation = Quaternion(0, 0, 0.382683, 0.92388)
+
+[editable path="playermodel/character-male-e2"]

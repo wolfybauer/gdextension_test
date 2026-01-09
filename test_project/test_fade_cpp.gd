@@ -1,7 +1,7 @@
 extends Node3D
 
-@onready var player: AnimatableBody3D = $Player
-@onready var camera_3d: Camera3D = $Camera3D
+@onready var player: RigidCharacterBody3D = $Player
+@onready var camera_3d: Camera3D = $Player/Camera3D
 
 @onready var cam_toggle: CheckButton = $UI/PanelContainer/HBoxContainer/CamToggle
 @onready var pause_button: Button = $UI/PanelContainer/HBoxContainer/PauseButton
@@ -11,14 +11,18 @@ var paused:bool = false
 
 func set_cam_persp():
 	camera_3d.projection = Camera3D.PROJECTION_PERSPECTIVE
-	camera_3d.global_position = Vector3(8.0,12.0,10.0)
-	camera_3d.global_rotation_degrees = Vector3(-32.3,30.0,0.0)
+	#camera_3d.global_position = Vector3(8.0,12.0,10.0)
+	camera_3d.position = Vector3(8.0,12.0,10.0)
+	#camera_3d.global_rotation_degrees = Vector3(-32.3,30.0,0.0)
+	camera_3d.rotation_degrees = Vector3(-32.3,30.0,0.0)
 	cam_toggle.text = "PERSP"
 
 func set_cam_iso():
 	camera_3d.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera_3d.global_position = Vector3(7.0,10.0,10.0)
-	camera_3d.global_rotation_degrees = Vector3(-32.3,30.0,0.0)
+	#camera_3d.global_position = Vector3(7.0,10.0,10.0)
+	camera_3d.position = Vector3(7.0,10.0,10.0)
+	#camera_3d.global_rotation_degrees = Vector3(-32.3,30.0,0.0)
+	camera_3d.rotation_degrees = Vector3(-32.3,30.0,0.0)
 	camera_3d.size = 12
 	cam_toggle.text = "ORTHO"
 
@@ -33,12 +37,12 @@ func toggle_paused():
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	tw = get_tree().create_tween()
-	tw.tween_property(player, 'global_position', Vector3(7.0,0.0,-1.2), 2.0)
-	tw.tween_property(player, 'global_position', Vector3(7.0,5.0,-1.2), 1.0)
-	tw.tween_property(player, 'global_position', Vector3(-7.0,5.0,-1.2), 2.0)
-	tw.tween_property(player, 'global_position', Vector3(-7.0,0.0,-1.2), 1.0)
-	tw.set_loops()
+	#tw = get_tree().create_tween()
+	#tw.tween_property(player, 'global_position', Vector3(7.0,0.0,-1.2), 2.0)
+	#tw.tween_property(player, 'global_position', Vector3(7.0,5.0,-1.2), 1.0)
+	#tw.tween_property(player, 'global_position', Vector3(-7.0,5.0,-1.2), 2.0)
+	#tw.tween_property(player, 'global_position', Vector3(-7.0,0.0,-1.2), 1.0)
+	#tw.set_loops()
 	
 	cam_toggle.toggled.connect(func(e):
 		if e: set_cam_persp()
@@ -52,9 +56,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var tree:SceneTree = get_tree()
 	#get_tree().call_group('fade_wall', 'check_fade', player, camera_3d, 1.5, 5.0, 0.25)
-	FadeWall3D.check_fade_walls(tree, player, camera_3d, 1.5, 5.0, 0.25)
-	FadeFloor3D.check_fade_floors(tree, player, 2.0)
-	FadeFloor3D.check_fade_objects(tree, player, 2.7)
+	FadeWall3D.check_fade_walls(tree, player, camera_3d, 2.0, 5.0, 0.25)
+	FadeFloor3D.check_fade_floors(tree, player, -1.5)
+	FadeFloor3D.check_fade_objects(tree, player, -1.5)
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed('ui_cancel'):

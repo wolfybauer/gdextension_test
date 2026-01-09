@@ -25,6 +25,12 @@ using namespace fade_geometry;
 int FadeWall3D::s_global_render_priority = 0;
 float FadeWall3D::s_global_y_margin = DEFAULT_FADE_Y_MARGIN;
 
+void FadeWall3D::set_opacity(float op) {
+    op = Math::clamp<float>(op, 0.0f,1.0f);
+    _fade_target = op;
+}
+
+
 void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, float fade_speed, float min_alpha)
 {
     Vector3 tp = target->get_global_position();
@@ -184,6 +190,7 @@ void FadeWall3D::_on_ready() {
     precompute_bounds(mesh_inst, _aabb_min, _aabb_max, _center2d, _wall_normal); // TODO add error code
 
     add_to_group("fade_wall");
+    // add_to_group("fade_obj");
     set_physics_process(true);
 }
 
