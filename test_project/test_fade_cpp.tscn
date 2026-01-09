@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://7v8njv71gxsh"]
+[gd_scene load_steps=29 format=3 uid="uid://7v8njv71gxsh"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_qdlsv"]
 [ext_resource type="Script" uid="uid://c6bw5h615kxf" path="res://test_fade_cpp.gd" id="1_rqttx"]
@@ -80,6 +80,12 @@ albedo_color = Color(1, 1, 0.43137255, 1)
 material = SubResource("StandardMaterial3D_vo2n0")
 size = Vector3(3, 0.1, 8)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_k5nj1"]
+size = Vector3(3, 0.1, 8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e7laa"]
+size = Vector3(3, 0.1, 8)
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vqdp2"]
 albedo_color = Color(0.27450982, 0.21568628, 0.21568628, 1)
 
@@ -137,6 +143,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.9353843)
 [node name="Camera3D" type="Camera3D" parent="Player"]
 transform = Transform3D(0.8660254, -0.26717615, 0.42263094, 0, 0.84526193, 0.5343523, -0.5, -0.46276268, 0.73201823, 7, 10, 7.0646157)
 projection = 1
+current = true
 size = 10.0
 
 [node name="Level" type="Node3D" parent="."]
@@ -147,7 +154,7 @@ size = Vector3(20, 0, 20)
 material = SubResource("StandardMaterial3D_rqttx")
 
 [node name="FadeWall3D" type="FadeWall3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3, -1)
 metadata/_edit_group_ = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/FadeWall3D"]
@@ -157,7 +164,7 @@ shape = SubResource("BoxShape3D_2py3s")
 mesh = SubResource("BoxMesh_vo2n0")
 
 [node name="FadeWall3D2" type="FadeWall3D" parent="Level"]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.5, 1.5, -2.5)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.5, 1.5, -6)
 metadata/_edit_group_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeWall3D2"]
@@ -168,7 +175,7 @@ surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
 shape = SubResource("BoxShape3D_qdlsv")
 
 [node name="FadeWall3D4" type="FadeWall3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 4.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 4.5, -1)
 metadata/_edit_group_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeWall3D4"]
@@ -178,7 +185,18 @@ surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/FadeWall3D4"]
 shape = SubResource("BoxShape3D_qdlsv")
 
-[node name="FadeWall3D5" type="FadeWall3D" parent="Level" groups=["fade_obj"]]
+[node name="FadeWall3D7" type="FadeWall3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1.5, -1)
+metadata/_edit_group_ = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeWall3D7"]
+mesh = SubResource("BoxMesh_k5nj1")
+surface_material_override/0 = SubResource("ShaderMaterial_k5nj1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/FadeWall3D7"]
+shape = SubResource("BoxShape3D_qdlsv")
+
+[node name="FadeWall3D5" type="FadeWall3D" parent="Level"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 4.5, -9)
 metadata/_edit_group_ = true
 
@@ -188,7 +206,7 @@ shape = SubResource("BoxShape3D_0o580")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeWall3D5"]
 mesh = SubResource("BoxMesh_y35fo")
 
-[node name="FadeWall3D6" type="FadeWall3D" parent="Level" groups=["fade_obj"]]
+[node name="FadeWall3D6" type="FadeWall3D" parent="Level"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 4.5, -4)
 metadata/_edit_group_ = true
 
@@ -201,6 +219,7 @@ shape = SubResource("BoxShape3D_qdlsv")
 
 [node name="FadeFloor" type="FadeFloor3D" parent="Level"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 3, -4)
+metadata/_edit_group_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeFloor"]
 mesh = SubResource("BoxMesh_e7laa")
@@ -210,6 +229,7 @@ shape = SubResource("BoxShape3D_vo2n0")
 
 [node name="FadeFloor3" type="FadeFloor3D" parent="Level"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 6, -4)
+metadata/_edit_group_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeFloor3"]
 mesh = SubResource("BoxMesh_e7laa")
@@ -219,12 +239,23 @@ shape = SubResource("BoxShape3D_vo2n0")
 
 [node name="FadeFloor2" type="FadeFloor3D" parent="Level"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.0962715, 3.5, -4)
+metadata/_edit_group_ = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeFloor2"]
 mesh = SubResource("BoxMesh_wrn47")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Level/FadeFloor2"]
-shape = SubResource("BoxShape3D_vo2n0")
+shape = SubResource("BoxShape3D_k5nj1")
+
+[node name="FadeFloor4" type="FadeFloor3D" parent="Level"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 3, -3)
+metadata/_edit_group_ = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Level/FadeFloor4"]
+mesh = SubResource("BoxMesh_wrn47")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Level/FadeFloor4"]
+shape = SubResource("BoxShape3D_e7laa")
 
 [node name="FadeObj" type="MeshInstance3D" parent="Level" groups=["fade_obj"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.8450856, 4, -6)

@@ -56,7 +56,7 @@ void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, 
         // set_visible(false);
         return;
     }
-    set_visible(true);
+    // set_visible(true);
     if((mypos.y + (*_y_margin)) < tp.y) {
         _fade_target = 1.0f;
         return;
@@ -75,37 +75,59 @@ void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, 
 
     Transform3D ct = camera->get_global_transform();
     enum Camera3D::ProjectionType p = camera->get_projection();
+    AABB wall_aabb = get_global_transform().xform(_local_aabb);
+
     if(p == Camera3D::PROJECTION_PERSPECTIVE) {
-        Vector2 cam2 = Vector2(ct.origin.x, ct.origin.z);
-        if(projected_outside(cam2, ply2, _center2d) ||
-            !segment_hits_aabb(cam2, ply2, _aabb_min, _aabb_max)) {
-            _fade_target = 1.0f;
+        // Vector2 cam2 = Vector2(ct.origin.x, ct.origin.z);
+        // if(projected_outside(cam2, ply2, _center2d) ||
+        //     !segment_hits_aabb(cam2, ply2, _aabb_min, _aabb_max)) {
+        //     _fade_target = 1.0f;
+        // } else {
+        //     _fade_target = min_alpha;
+        // }
+        Vector3 ray_from = ct.origin;
+        Vector3 ray_to   = tp;
+
+        // does camera→player ray intersect the wall volume?
+        if (wall_aabb.intersects_segment(ray_from, ray_to)) {
+            _fade_target = min_alpha;   // occluding → fade
         } else {
-            _fade_target = min_alpha;
+            _fade_target = 1.0f;        // clear LOS → no fade
         }
+
     } else if(p == Camera3D::PROJECTION_ORTHOGONAL) {
-        Vector3 fwd = -ct.basis.get_column(2);
-        fwd.y = 0.0f;
-        float yaw = Math::atan2(fwd.x, fwd.z);
+        // Vector3 fwd = -ct.basis.get_column(2);
+        // fwd.y = 0.0f;
+        // float yaw = Math::atan2(fwd.x, fwd.z);
 
-        // pillar? skip back/front test
-        if(!_wall_normal.is_zero_approx()) {
-            Vector2 rel_norm = _wall_normal.rotated(-yaw);
-            if((ply2 - _center2d).dot(rel_norm.rotated(camera->get_rotation().y)) <= 0.0f) {
-                _fade_target = 1.0f;
-                return;
-            }
-        }
+        // // pillar? skip back/front test
+        // if(!_wall_normal.is_zero_approx()) {
+        //     Vector2 rel_norm = _wall_normal.rotated(-yaw);
+        //     if((ply2 - _center2d).dot(rel_norm.rotated(camera->get_global_rotation().y)) <= 0.0f) {
+        //         _fade_target = 1.0f;
+        //         return;
+        //     }
+        // }
 
-        Vector2 proj_dir = Vector2(fwd.x, fwd.z).normalized();
-        Vector2 a = ply2 - proj_dir * 9999.0f;
-        Vector2 b = ply2 + proj_dir * 9999.0f;
+        // Vector2 proj_dir = Vector2(fwd.x, fwd.z).normalized();
+        // Vector2 a = ply2 - proj_dir * 9999.0f;
+        // Vector2 b = ply2 + proj_dir * 9999.0f;
         
-        if(segment_hits_aabb(a, b, _aabb_min, _aabb_max)) {
+        // if(segment_hits_aabb(a, b, _aabb_min, _aabb_max)) {
+        //     _fade_target = min_alpha;
+        // } else {
+        //     _fade_target = 1.0f;
+        // }
+        Vector3 dir = -ct.basis.get_column(2).normalized();
+        Vector3 ray_from = tp - dir * 10000.0f;
+        Vector3 ray_to   = tp + dir * 10000.0f;
+
+        if (wall_aabb.intersects_segment(ray_from, ray_to)) {
             _fade_target = min_alpha;
         } else {
             _fade_target = 1.0f;
         }
+
     } else {
         UtilityFunctions::push_error("[FadeWall3D] ", get_name(), " check_fade : unsupported camera type");
     }
@@ -135,6 +157,8 @@ void FadeWall3D::_on_ready() {
         UtilityFunctions::push_error("[FadeWall3D] ", get_name(), " _on_ready : MeshInstance3D not found. abort");
         return;
     }
+
+    _local_aabb = mesh_inst->get_aabb();
 
     _fade_mat.instantiate();
     _fade_shader = ResourceLoader::get_singleton()->load(FADE_SHADER_PATH);

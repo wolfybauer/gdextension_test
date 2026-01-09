@@ -64,6 +64,7 @@ private:
     Vector2 _aabb_max;
     Vector2 _center2d;
     Vector2 _wall_normal;
+    AABB _local_aabb;
 
     float _fade_amount = 1.0f;
     float _fade_target = 1.0f;

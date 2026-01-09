@@ -37,12 +37,6 @@ func toggle_paused():
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	#tw = get_tree().create_tween()
-	#tw.tween_property(player, 'global_position', Vector3(7.0,0.0,-1.2), 2.0)
-	#tw.tween_property(player, 'global_position', Vector3(7.0,5.0,-1.2), 1.0)
-	#tw.tween_property(player, 'global_position', Vector3(-7.0,5.0,-1.2), 2.0)
-	#tw.tween_property(player, 'global_position', Vector3(-7.0,0.0,-1.2), 1.0)
-	#tw.set_loops()
 	
 	cam_toggle.toggled.connect(func(e):
 		if e: set_cam_persp()
@@ -57,7 +51,7 @@ func _process(_delta: float) -> void:
 	var tree:SceneTree = get_tree()
 	#get_tree().call_group('fade_wall', 'check_fade', player, camera_3d, 1.5, 5.0, 0.25)
 	FadeWall3D.check_fade_walls(tree, player, camera_3d, 2.0, 5.0, 0.25)
-	FadeFloor3D.check_fade_floors(tree, player, -1.5)
+	FadeFloor3D.check_fade_floors(tree, player, 1.5)
 	FadeFloor3D.check_fade_objects(tree, player, -1.5)
 
 func _unhandled_input(_event: InputEvent) -> void:
