@@ -163,3 +163,6 @@ nbdist/
 *.orig
 *.old
 *.log
+
+
+resume.sh

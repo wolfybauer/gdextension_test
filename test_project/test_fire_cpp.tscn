@@ -1,13 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://blkpvcwih8j7w"]
+[gd_scene format=3 uid="uid://blkpvcwih8j7w"]
 
 [ext_resource type="Texture2D" uid="uid://bioamopp6syek" path="res://icon.svg" id="1_pfxp3"]
 [ext_resource type="Script" uid="uid://u25egtqimtef" path="res://test_fire_cpp.gd" id="1_u3ega"]
 [ext_resource type="Material" uid="uid://bfdrni2qgdlhy" path="res://misc/glass_material.tres" id="3_naox4"]
 [ext_resource type="Texture2D" uid="uid://c81iotohi34fn" path="res://misc/woodcrate.jpg" id="3_u3ega"]
 [ext_resource type="Script" uid="uid://b7q6w1uv4wrbd" path="res://misc/throw_point.gd" id="6_p2wxh"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hbvx4"]
-albedo_texture = ExtResource("1_pfxp3")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gnr80"]
 albedo_texture = ExtResource("3_u3ega")
@@ -27,121 +24,121 @@ top_radius = 0.05
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_u3ega"]
 points = PackedVector3Array(0.4999565, -1.0158731, -0.19828533, -0.071229726, 1.0158731, 0.055518236, 0.0237287, -0.9840524, 0.53174603, 0.08720523, -0.9206101, -0.5158731, -0.42050445, -1.0158731, 0.34121388, 0.43647996, -0.9522318, 0.30942434, 0.055518236, 1.0158731, -0.071229726, -0.29344884, -1.0158731, -0.45219144, 0.08720523, 0.9840524, 0.055518236, -0.071229726, 0.8887895, -0.10301926, 0.34121388, -0.9840524, -0.42050445, -0.5158731, -0.9522318, -0.1348088, -0.26176184, -0.9522318, 0.46816695, 0.53174603, -0.9840524, 0.0237287, -0.5158731, -0.9840524, 0.1507843, 0.24594782, -0.9206101, 0.46816695, -0.42050445, -0.9206101, -0.32523838, -0.1348088, -0.9522318, -0.5158731, 0.055518236, 0.9840524, 0.08720523, 0.118994765, 0.8253471, -0.071229726, -0.071229726, 0.8253471, 0.118994765, 0.46816695, -0.7619048, 0.1507843, -0.10301926, 0.8887895, -0.071229726, -0.19828533, -1.0158731, 0.4999565, 0.4046904, -0.9522318, -0.35702792, 0.21426083, -0.9206101, -0.48398098, -0.3887149, -0.7619048, 0.30942434, -0.5158731, -0.9206101, 0.08720523, -0.29344884, -0.9522318, -0.45219144, -0.10301926, -0.8569689, 0.4999565, 0.34121388, -0.6982636, 0.34121388, 0.4999565, -0.9206101, -0.16649579)
 
-[node name="Test_FireCPP" type="Node3D"]
+[node name="Test_FireCPP" type="Node3D" unique_id=742868019]
 script = ExtResource("1_u3ega")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1666750755]
 transform = Transform3D(0.9909832, -0.1339862, 0, 0.083773874, 0.61960495, 0.78043044, -0.1045669, -0.7733935, 0.6252426, 0, 8.674, 5.0900106)
 shadow_enabled = true
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=554062114]
 transform = Transform3D(0.8660254, -0.26717612, 0.4226309, 0, 0.8452618, 0.53435224, -0.5, -0.46276262, 0.7320182, 5, 4, 5)
 
-[node name="Floor" type="CSGBox3D" parent="."]
-use_collision = true
-size = Vector3(20, 0, 20)
-material = SubResource("StandardMaterial3D_hbvx4")
-
-[node name="Primitive" type="RigidBody3D" parent="."]
+[node name="Primitive" type="RigidBody3D" parent="." unique_id=461355114]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9240794, 3, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive" unique_id=204558387]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1392822, 0, 0)
 mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive" unique_id=548083564]
 shape = SubResource("BoxShape3D_naox4")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="Primitive"]
+[node name="FireComponent3D" type="FireComponent3D" parent="Primitive" unique_id=808100640]
 resolution = Vector3i(2, 2, 2)
 
-[node name="DestronoiNode" type="DestronoiNode" parent="Primitive"]
-
-[node name="Primitive2" type="RigidBody3D" parent="."]
+[node name="Primitive2" type="RigidBody3D" parent="." unique_id=237045180]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9297175, 3, 1.3507483)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive2"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive2" unique_id=1318289545]
 mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive2"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive2" unique_id=199451921]
 shape = SubResource("BoxShape3D_naox4")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="Primitive2"]
+[node name="FireComponent3D" type="FireComponent3D" parent="Primitive2" unique_id=121083828]
 resolution = Vector3i(2, 2, 2)
 
-[node name="DestronoiNode" type="DestronoiNode" parent="Primitive2"]
+[node name="DestronoiNode" type="DestronoiNode" parent="Primitive2" unique_id=32596658]
 
-[node name="Primitive3" type="RigidBody3D" parent="."]
+[node name="DestronoiNode" type="DestronoiNode" parent="." unique_id=1766068375]
+
+[node name="Primitive3" type="RigidBody3D" parent="." unique_id=1146053914]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9240794, 3, 2.730787)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive3"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Primitive3" unique_id=886401262]
 mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive3"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Primitive3" unique_id=1145949857]
 shape = SubResource("BoxShape3D_naox4")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="Primitive3"]
+[node name="FireComponent3D" type="FireComponent3D" parent="Primitive3" unique_id=608917815]
 resolution = Vector3i(2, 2, 2)
 
-[node name="DestronoiNode" type="DestronoiNode" parent="Primitive3"]
+[node name="DestronoiNode" type="DestronoiNode" parent="Primitive3" unique_id=287845948]
 
-[node name="FakeConvex" type="RigidBody3D" parent="."]
+[node name="FakeConvex" type="RigidBody3D" parent="." unique_id=715047320]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex" unique_id=330308272]
 mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex"]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex" unique_id=1723992049]
 shape = SubResource("ConvexPolygonShape3D_hbvx4")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex"]
+[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex" unique_id=1892597981]
 
-[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex"]
+[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex" unique_id=337441542]
 
-[node name="FakeConvex2" type="RigidBody3D" parent="."]
+[node name="FakeConvex2" type="RigidBody3D" parent="." unique_id=201833527]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 1.2619135)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex2"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex2" unique_id=1335853546]
 mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex2"]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex2" unique_id=1631959435]
 shape = SubResource("ConvexPolygonShape3D_hbvx4")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex2"]
+[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex2" unique_id=1021304035]
 
-[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex2"]
+[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex2" unique_id=1460607981]
 
-[node name="FakeConvex3" type="RigidBody3D" parent="."]
+[node name="FakeConvex3" type="RigidBody3D" parent="." unique_id=1076012147]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 2.5367706)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex3"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FakeConvex3" unique_id=1816573435]
 mesh = SubResource("BoxMesh_hbvx4")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex3"]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="FakeConvex3" unique_id=266491093]
 shape = SubResource("ConvexPolygonShape3D_hbvx4")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex3"]
+[node name="FireComponent3D" type="FireComponent3D" parent="FakeConvex3" unique_id=1773299673]
 
-[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex3"]
+[node name="DestronoiNode" type="DestronoiNode" parent="FakeConvex3" unique_id=1722111793]
 
-[node name="RealConvex" type="RigidBody3D" parent="."]
+[node name="RealConvex" type="RigidBody3D" parent="." unique_id=387130788]
 transform = Transform3D(0.25881907, -0.9659258, 0, 0.9659258, 0.25881907, 0, 0, 0, 1, -0.4208145, 5.5033073, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="RealConvex"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RealConvex" unique_id=516725609]
 mesh = SubResource("CylinderMesh_naox4")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="RealConvex"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RealConvex" unique_id=1231233436]
 shape = SubResource("ConvexPolygonShape3D_u3ega")
 
-[node name="FireComponent3D" type="FireComponent3D" parent="RealConvex"]
+[node name="FireComponent3D" type="FireComponent3D" parent="RealConvex" unique_id=735463663]
 torch = true
 max_hp = -1
 
-[node name="DestronoiNode" type="DestronoiNode" parent="RealConvex"]
+[node name="DestronoiNode" type="DestronoiNode" parent="RealConvex" unique_id=1993261566]
 
-[node name="ThrowPoint" type="Node3D" parent="."]
+[node name="ThrowPoint" type="Node3D" parent="." unique_id=534475896]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 1, 0.1, 0)
 visible = false
 script = ExtResource("6_p2wxh")
 marker_tex = ExtResource("1_pfxp3")
 metadata/_custom_type_script = "uid://b7q6w1uv4wrbd"
+
+[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1066795860]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+use_collision = true
+size = Vector3(20, 1, 20)
