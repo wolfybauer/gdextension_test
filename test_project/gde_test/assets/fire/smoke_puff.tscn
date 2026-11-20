@@ -1,0 +1,67 @@
+[gd_scene load_steps=13 format=3 uid="uid://dnma30qc8jcvk"]
+
+[ext_resource type="Shader" uid="uid://c0sf82gbq5024" path="res://shaders/shader_basic_cloud.tres" id="1_t8elp"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yg62m"]
+render_priority = 0
+shader = ExtResource("1_t8elp")
+shader_parameter/cloud_speed = Vector2(0.2, 1)
+shader_parameter/cloud_intensity = 0.2
+
+[sub_resource type="Curve" id="Curve_fj7yv"]
+_data = [Vector2(0, 0), 0.0, 0.254682, 0, 0, Vector2(0.441177, 0), 0.152809, 0.152809, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_tlwt5"]
+curve = SubResource("Curve_fj7yv")
+
+[sub_resource type="Gradient" id="Gradient_aqk2v"]
+offsets = PackedFloat32Array(0.281818, 0.6)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_036b0"]
+gradient = SubResource("Gradient_aqk2v")
+
+[sub_resource type="Curve" id="Curve_tlwt5"]
+_data = [Vector2(0.00735295, 1), 0.0, 0.0, 0, 0, Vector2(0.330882, 0.337079), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_aqk2v"]
+curve = SubResource("Curve_tlwt5")
+
+[sub_resource type="Curve" id="Curve_036b0"]
+_data = [Vector2(0, 0.314607), 0.0, 3.82022, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_dwbse"]
+curve = SubResource("Curve_036b0")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_pkg7o"]
+lifetime_randomness = 0.4
+emission_shape = 1
+emission_sphere_radius = 0.2
+radial_velocity_min = 6.49998
+radial_velocity_max = 12.0
+radial_velocity_curve = SubResource("CurveTexture_aqk2v")
+gravity = Vector3(0, 1, 0)
+scale_min = 1.4
+scale_max = 3.0
+scale_curve = SubResource("CurveTexture_dwbse")
+color_ramp = SubResource("GradientTexture1D_036b0")
+alpha_curve = SubResource("CurveTexture_tlwt5")
+
+[sub_resource type="SphereMesh" id="SphereMesh_gbfbk"]
+
+[node name="SmokePuff" type="GPUParticles3D"]
+material_override = SubResource("ShaderMaterial_yg62m")
+cast_shadow = 0
+emitting = false
+amount = 3
+lifetime = 0.6
+one_shot = true
+explosiveness = 0.8
+randomness = 0.7
+use_fixed_seed = true
+seed = 3567979626
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_pkg7o")
+draw_pass_1 = SubResource("SphereMesh_gbfbk")
