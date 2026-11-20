@@ -69,7 +69,6 @@ private:
     float _fade_amount = 1.0f;
     float _fade_target = 1.0f;
     float _fade_speed = 5.0f;
-    float _target_dist = 0.0f;
 
     int * _render_prio = nullptr;
     float  * _y_margin = nullptr;

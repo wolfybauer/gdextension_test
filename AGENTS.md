@@ -27,7 +27,7 @@ Open the editor with `~/00_apps/Godot_v4.8-beta4_linux.x86_64 --editor --path te
 | Scene | What to check |
 | --- | --- |
 | `test_fade_cpp.tscn` | Move with WASD and toggle between orthographic and perspective cameras. Check walls and floors as they pass between the player and camera. |
-| `test_fire_cpp.tscn` | Press Enter or Space to apply randomized fire damage. Press Up to fracture the three sample bodies. Restart the scene between trials. |
+| `test_fire_cpp.tscn` | Press Enter or Space to ignite the first crate. Press Up to fracture the three sample bodies. Press R to reset. |
 | `test_interact_cpp.tscn` | Move with WASD and check wall fading around the player and camera pivot. The last fade-wall refactor already called out odd behavior in this scene. |
 
 For headless checks, import with `--headless --editor --import --path test_project` and run each scene with `--headless --path test_project --quit-after 90 SCENE.tscn`.

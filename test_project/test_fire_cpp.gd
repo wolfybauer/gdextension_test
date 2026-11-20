@@ -1,30 +1,19 @@
 extends Node3D
 
-@onready var throw_point: ThrowPoint = $ThrowPoint
+const FRACTURE_SAMPLES := ["Primitive", "FakeConvex", "RealConvex"]
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
-
-func _process(_delta: float) -> void:
-	throw_point.draw_aim(8.0, 78.0)
-
-func _unhandled_input(_event: InputEvent) -> void:
-	if Input.is_action_just_pressed("ui_cancel"):
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
 		get_tree().quit()
-	if Input.is_action_just_pressed("ui_accept"):
-		var pos:Vector3 = Vector3(randf_range(-10.0,10.0),randf_range(-10.0,10.0),randf_range(-10.0,10.0))
-		var dam:int = randi_range(10,100)
-		print('applying %d damage from world_pos=' % dam, pos)
-		$Primitive.emit_signal("spread_fire", pos, dam)
-		$FakeConvex.emit_signal("spread_fire", pos, dam)
-		$RealConvex.emit_signal("spread_fire", pos, dam)
-	
-	if Input.is_action_just_pressed("ui_up"):
-		#$BoxCPP_texture/DestronoiNode.destroy()
-		#$FakeConvex/DestronoiGD.destroy()
-		#$FakeConvex/DestronoiNode.destroy()
-		#$RealConvex/DestronoiGD.destroy()
-		$Primitive/DestronoiNode.destroy()
-		$FakeConvex/DestronoiNode.destroy()
-		$RealConvex/DestronoiNode.destroy()
+	elif event.is_action_pressed("ui_accept"):
+		var sample := get_node_or_null("Primitive") as RigidBody3D
+		if sample:
+			var fire := sample.get_node("FireComponent3D") as FireComponent3D
+			fire.apply_fire(sample.global_position, fire.get_max_hp())
+	elif event.is_action_pressed("ui_up"):
+		for sample in FRACTURE_SAMPLES:
+			var fracture := get_node_or_null(sample + "/DestronoiNode") as DestronoiNode
+			if fracture:
+				fracture.destroy()
+	elif event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_R:
+		get_tree().reload_current_scene()
