@@ -78,6 +78,12 @@ Run the following command to download godot-cpp:
     sys.exit(1)
 
 # Include godot-cpp SConstruct, passing all command-line arguments
+api_dir = os.path.abspath(ARGUMENTS.get("gdextension_dir", ".godot-api"))
+api_inputs = ("extension_api.json", "gdextension_interface.json")
+if not all(os.path.isfile(os.path.join(api_dir, name)) for name in api_inputs):
+    print_error(f"Missing Godot API files in {api_dir}. See AGENTS.md for the dump commands.")
+    sys.exit(1)
+env["gdextension_dir"] = api_dir
 env = SConscript("godot-cpp/SConstruct", {"env": env, "customs": customs})
 
 env.Append(CCFLAGS=[

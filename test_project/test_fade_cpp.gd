@@ -6,9 +6,6 @@ extends Node3D
 @onready var cam_toggle: CheckButton = $UI/PanelContainer/HBoxContainer/CamToggle
 @onready var pause_button: Button = $UI/PanelContainer/HBoxContainer/PauseButton
 
-var tw:Tween
-var paused:bool = false
-
 func set_cam_persp():
 	camera_3d.projection = Camera3D.PROJECTION_PERSPECTIVE
 	#camera_3d.global_position = Vector3(8.0,12.0,10.0)
@@ -27,13 +24,9 @@ func set_cam_iso():
 	cam_toggle.text = "ORTHO"
 
 func toggle_paused():
-	paused = not paused
-	if paused:
-		tw.pause()
-		pause_button.text = "PLAY"
-	else:
-		tw.play()
-		pause_button.text = "PAUSE"
+	var tree := get_tree()
+	tree.paused = not tree.paused
+	pause_button.text = "PLAY" if tree.paused else "PAUSE"
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:

@@ -1,6 +1,6 @@
 [configuration]
 entry_symbol = "gde_test_init"
-compatibility_minimum = "4.5"
+compatibility_minimum = "4.8"
 
 [icons]
 

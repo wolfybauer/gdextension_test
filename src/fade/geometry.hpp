@@ -33,7 +33,7 @@ inline bool seg_seg(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4) {
     Vector2 d2 = p4 - p3;
 
     float denom = d1.cross(d2);
-    if(Math::abs<float>(denom) < 0.000001f) {
+    if(Math::abs(denom) < 0.000001f) {
         return false;
     }
 
@@ -95,11 +95,11 @@ inline void precompute_bounds(MeshInstance3D * mesh_inst, Vector2 & aabbmin, Vec
     aabbmax = Vector2(maxx, maxz);
     center2d = (aabbmin + aabbmax) * 0.5f;
 
-    float dx = Math::abs<float>(aabbmax.x - aabbmin.x);
-    float dz = Math::abs<float>(aabbmax.y - aabbmin.y);
+    float dx = Math::abs(aabbmax.x - aabbmin.x);
+    float dz = Math::abs(aabbmax.y - aabbmin.y);
 
     // pillar / square
-    if(Math::abs<float>(dx - dz) < 0.1f) {
+    if(Math::abs(dx - dz) < 0.1f) {
         wallnormal = Vector2(0,0);
     // z-facing
     } else if(dx > dz) {

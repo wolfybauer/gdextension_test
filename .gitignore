@@ -1,6 +1,8 @@
 # Godot auto generated files
 *.gen.*
 .godot/
+/.godot-api/
+/.venv/
 
 # Ignore the top-level bin folder
 /bin/

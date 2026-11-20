@@ -66,7 +66,7 @@ void FadeWall3D::check_fade(Node3D * target, Camera3D * camera, float max_dist, 
 
     if(max_dist > 0.0f && !_wall_normal.is_zero_approx()) {
         _target_dist = (ply2 - _center2d).dot(_wall_normal);
-        if(Math::abs<float>(_target_dist) > max_dist) {
+        if(Math::abs(_target_dist) > max_dist) {
             _fade_target = 1.0f;
             return;
         }
