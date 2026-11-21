@@ -2,6 +2,7 @@ extends Node3D
 
 const SKULLGUY = preload("skullguy1.glb")
 const GENERIC = preload("generic_guy.glb")
+const JabHipCompensation = preload("jab_hip_compensation.gd")
 const WEAPONS := [
 	{"scene": preload("pistol.glb"), "name": "Pistol", "stance": &"pistol", "cooldown": 0.2, "automatic": false, "recoil": 0.32},
 	{"scene": preload("revolver.glb"), "name": "Revolver", "stance": &"pistol", "cooldown": 0.3, "automatic": false, "recoil": 0.42},
@@ -57,6 +58,7 @@ var weapon: Node3D
 
 func _ready() -> void:
 	_select_weapon(0)
+	JabHipCompensation.new().setup(rig)
 	rig.torso_animation_finished.connect(func(_clip): action_active = false)
 
 func _select_weapon(index: int) -> void:
@@ -119,7 +121,9 @@ func _physics_process(delta: float) -> void:
 
 	if not facing.is_zero_approx():
 		rig.rotation.y = lerp_angle(rig.rotation.y, atan2(-facing.x, -facing.y), weight)
-	if aiming or recoiling:
+	var torso: AnimationPlayer = rig.get_torso_player()
+	var right_jab := torso.current_animation == &"main/punch_right_jab"
+	if (aiming or recoiling) and not right_jab:
 		var aim_direction := facing
 		if aim_direction.is_zero_approx():
 			var forward: Vector3 = -rig.global_basis.z
@@ -186,6 +190,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_TAB:
 			var next_model := GENERIC if use_skullguy else SKULLGUY
 			if rig.load_model(next_model, use_skullguy):
+				JabHipCompensation.new().setup(rig)
 				use_skullguy = not use_skullguy
 				backpedal_correction = Vector2.ZERO
 				_mount_weapon()
@@ -198,7 +203,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if _has_firearm():
 				_try_fire()
 			elif not action_active:
-				action_active = rig.play_torso(&"melee1" if equipped else &"punch0", 0.08)
+				var clips := [&"melee1", &"melee2", &"punch_right_jab"] if equipped else [&"punch0", &"punch1", &"punch2", &"punch_right_jab"]
+				action_active = rig.play_torso(clips.pick_random(), 0.08)
 		KEY_E:
 			if _has_firearm():
 				recoil_remaining = 0.0
