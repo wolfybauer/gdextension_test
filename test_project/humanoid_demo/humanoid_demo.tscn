@@ -1,0 +1,65 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://humanoid_demo/humanoid_demo.gd" id="1"]
+[ext_resource type="PackedScene" path="res://gde_test/assets/humanoid/humanoid.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://humanoid_demo/skullguy1.glb" id="3"]
+
+[sub_resource type="Shader" id="FloorGrid"]
+code = "shader_type spatial;
+
+void fragment() {
+	vec2 cell = abs(fract(UV * 80.0 - 0.5) - 0.5);
+	float line = 1.0 - smoothstep(0.012, 0.026, min(cell.x, cell.y));
+	ALBEDO = mix(vec3(0.24, 0.28, 0.31), vec3(0.42, 0.47, 0.51), line);
+	ROUGHNESS = 1.0;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="FloorMaterial"]
+shader = SubResource("FloorGrid")
+
+[sub_resource type="PlaneMesh" id="Floor"]
+material = SubResource("FloorMaterial")
+size = Vector2(80, 80)
+
+[sub_resource type="CapsuleShape3D" id="PlayerShape"]
+
+[sub_resource type="BoxShape3D" id="FloorShape"]
+size = Vector3(80, 0.2, 80)
+
+[node name="HumanoidDemo" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+position = Vector3(0, 1, 0)
+shape = SubResource("PlayerShape")
+
+[node name="Humanoid" parent="Player" instance=ExtResource("2")]
+model_scene = ExtResource("3")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+position = Vector3(0, 6.2, 5)
+rotation_degrees = Vector3(-45, 0, 0)
+projection = 1
+size = 6.0
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-53, 130, 0)
+shadow_enabled = true
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("Floor")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+position = Vector3(0, -0.1, 0)
+shape = SubResource("FloorShape")
+
+[node name="Controls" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+text = "WASD  Move     Arrows  Aim     Shift  Jump     Space  Attack     E  Reload     Q  Equip / stow     Tab  Swap model"

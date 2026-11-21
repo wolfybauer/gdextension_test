@@ -104,6 +104,7 @@ cmake-build-*/
 *.pch
 *.pdb
 *.res
+!/test_project/gde_test/assets/humanoid/animations/*.res
 *.exp
 *.dll
 *.lib
