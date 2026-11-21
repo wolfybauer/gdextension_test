@@ -11,32 +11,28 @@
 #include "godot_cpp/variant/vector2.hpp"
 #include "godot_cpp/variant/vector3.hpp"
 
+#include <vector>
+
 
 using namespace godot;
 using namespace fade_geometry;
 
 float FadeFloor3D::s_global_y_margin = DEFAULT_FADE_Y_MARGIN;
-float FadeFloor3D::s_lowest_floor_height = -9999.0f;
-float FadeFloor3D::s_last_lowest_floor_height = -9999.0f;
 
-void FadeFloor3D::check_fade(Node3D * target, float max_dist) {
-    Vector3 tp = target->get_global_position();
-    Vector3 myp = get_global_position();
+float FadeFloor3D::distance_to_footprint(const Vector3 &position) const {
+    return get_xz_dist(position, _aabb_min, _aabb_max);
+}
 
-    // early out: target not below
-    if (tp.y + *_y_margin >= myp.y) {
-        set_visible(true);
-        return;
+bool FadeFloor3D::should_hide(const Vector3 &target, float max_dist) const {
+    const float margin = y_margin_override_enable ? y_margin_override : s_global_y_margin;
+    return target.y + margin < get_global_position().y &&
+            (max_dist <= 0.0f || distance_to_footprint(target) <= max_dist);
+}
+
+void FadeFloor3D::check_fade(Node3D *target, float max_dist) {
+    if (target && is_in_group("fade_floor")) {
+        set_visible(!should_hide(target->get_global_position(), max_dist));
     }
-
-    if (max_dist > 0.0f) {
-        if (get_xz_dist(tp, _aabb_min, _aabb_max) > max_dist) {
-            set_visible(true);
-            return;
-        }
-    }
-
-    set_visible(false);
 }
 
 void FadeFloor3D::check_fade_floors(SceneTree * tree, Node3D * target, float max_dist) {
@@ -54,56 +50,33 @@ void FadeFloor3D::check_fade_objects(SceneTree * tree, Node3D * target, float ma
         return;
     }
 
-    // get lowest floor above target
-    Vector3 tp = target->get_global_position();
-    s_last_lowest_floor_height = s_lowest_floor_height;
-    s_lowest_floor_height = 9999.0f;
-    Array objs = tree->get_nodes_in_group("fade_floor");
-    float xzdist = 9999.0f;
-    for (int i = 0; i < objs.size(); i++) {
-        FadeFloor3D *floor = Object::cast_to<FadeFloor3D>(objs[i]);
-        if (!floor) {
-            continue;
-        }
-        Vector3 pos = floor->get_global_position(); 
-        if(pos.y < tp.y) {
-            continue;
-        }
-        float newxz = get_xz_dist(tp, floor->_aabb_min, floor->_aabb_max);
-        if(pos.y <= s_lowest_floor_height && newxz < xzdist) {
-            s_lowest_floor_height = pos.y;
-            xzdist = newxz;
+    const Vector3 target_position = target->get_global_position();
+    std::vector<FadeFloor3D *> overhead_floors;
+    for (const Variant &node : tree->get_nodes_in_group("fade_floor")) {
+        FadeFloor3D *floor = Object::cast_to<FadeFloor3D>(node);
+        if (floor && floor->should_hide(target_position, max_dist)) {
+            overhead_floors.push_back(floor);
         }
     }
 
-    // exit early if not change
-    if(max_dist <= 0.0f && Math::is_equal_approx(s_lowest_floor_height, s_last_lowest_floor_height)) {
-        return;
-    }
-
-    // check all objects
-    objs = tree->get_nodes_in_group("fade_obj");
-    for (int i = 0; i < objs.size(); i++) {
-        Node3D *fobj = Object::cast_to<Node3D>(objs[i]);
-        if(!fobj) {
+    for (const Variant &node : tree->get_nodes_in_group("fade_obj")) {
+        Node3D *object = Object::cast_to<Node3D>(node);
+        if (!object || object == target) {
             continue;
         }
 
-        Vector3 fp = fobj->get_global_position();
-        
-        if(fp.y > s_lowest_floor_height) {
-            // target is too far from floor
-            if(max_dist > 0.0f && xzdist > max_dist) {
-                fobj->set_visible(true);
-            } else {
-                fobj->set_visible(false);
+        const Vector3 object_position = object->get_global_position();
+        bool covered = false;
+        for (const FadeFloor3D *floor : overhead_floors) {
+            if (object_position.y >= floor->get_global_position().y &&
+                    floor->distance_to_footprint(object_position) == 0.0f) {
+                covered = true;
+                break;
             }
-        } else {
-            fobj->set_visible(true);
         }
+        object->set_visible(!covered);
     }
 }
-
 
 void FadeFloor3D::_on_ready() {
     if(Engine::get_singleton()->is_editor_hint()) {
@@ -122,9 +95,15 @@ void FadeFloor3D::_on_ready() {
         return;
     }
 
-    _y_margin = &s_global_y_margin;
+    if (mesh_inst->get_mesh().is_null()) {
+        UtilityFunctions::push_error("[FadeFloor3D] ", get_name(), " has no floor mesh");
+        return;
+    }
 
-    precompute_bounds(mesh_inst, _aabb_min, _aabb_max, _center2d, _wall_normal); // TODO add error code
+    const AABB bounds = mesh_inst->get_global_transform().xform(mesh_inst->get_aabb());
+    const Vector3 end = bounds.get_end();
+    _aabb_min = Vector2(bounds.position.x, bounds.position.z);
+    _aabb_max = Vector2(end.x, end.z);
     add_to_group("fade_floor");
 }
 
@@ -187,22 +166,6 @@ void FadeFloor3D::_bind_methods() {
 
 void FadeFloor3D::set_global_y_margin(float m) {
     s_global_y_margin = m;
-
-    if(Engine::get_singleton()->is_editor_hint()) {
-        return;
-    }
-
-    Array floors = get_tree()->get_nodes_in_group("fade_floor");
-    for (int i = 0; i < floors.size(); i++) {
-        FadeFloor3D *fw = Object::cast_to<FadeFloor3D>(floors[i]);
-        if (!fw) {
-            continue;
-        }
-
-        if (!fw->y_margin_override_enable) {
-            fw->_y_margin = &s_global_y_margin;
-        }
-    }
 }
 
 float FadeFloor3D::get_global_y_margin() const {
@@ -219,7 +182,6 @@ float FadeFloor3D::get_y_margin_override() const {
 
 void FadeFloor3D::set_margin_override_enable(bool e) {
     y_margin_override_enable = e;
-    _y_margin = e ? &y_margin_override : &s_global_y_margin;
 }
 
 bool FadeFloor3D::get_margin_override_enable() const {

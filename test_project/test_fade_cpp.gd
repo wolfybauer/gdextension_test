@@ -42,10 +42,9 @@ func _ready() -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
 	var tree:SceneTree = get_tree()
-	#get_tree().call_group('fade_wall', 'check_fade', player, camera_3d, 1.5, 5.0, 0.25)
 	FadeWall3D.check_fade_walls(tree, player, camera_3d, 2.0, 5.0, 0.25)
 	FadeFloor3D.check_fade_floors(tree, player, 1.5)
-	FadeFloor3D.check_fade_objects(tree, player, -1.5)
+	FadeFloor3D.check_fade_objects(tree, player, 1.5)
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed('ui_cancel'):

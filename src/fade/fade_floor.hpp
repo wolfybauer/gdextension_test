@@ -1,15 +1,8 @@
 #pragma once
 
-// #include "godot_cpp/classes/shader_material.hpp"
 #include "godot_cpp/classes/scene_tree.hpp"
 #include "godot_cpp/classes/static_body3d.hpp"
-// #include "godot_cpp/variant/vector2.hpp"
-#include <godot_cpp/classes/ref.hpp>
-#include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/core/class_db.hpp>
-
-class Node3D;
-class Camer3D;
 
 namespace godot {
 
@@ -35,13 +28,9 @@ public:
 protected:
     static void _bind_methods();
 
-    // static int s_global_render_priority;
-
 private:
 
     static float s_global_y_margin;
-    static float s_lowest_floor_height;
-    static float s_last_lowest_floor_height;
 
     // exports
     float y_margin_override = 0.0f;
@@ -50,14 +39,10 @@ private:
     // internals
     Vector2 _aabb_min;
     Vector2 _aabb_max;
-    Vector2 _center2d;
-    Vector2 _wall_normal;
 
-    float  * _y_margin = nullptr;
-
-    // funcs
+    float distance_to_footprint(const Vector3 &position) const;
+    bool should_hide(const Vector3 &target, float max_dist) const;
     void _on_ready();
-    void _apply_render_priority();
 
 };
 
