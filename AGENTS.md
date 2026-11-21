@@ -29,7 +29,7 @@ Open the editor with `~/00_apps/Godot_v4.8-beta4_linux.x86_64 --editor --path te
 | `test_fade_cpp.tscn` | Move with WASD and toggle between orthographic and perspective cameras. Check walls and floors as they pass between the player and camera. |
 | `test_fire_cpp.tscn` | Press Enter or Space to ignite the first crate. Press Up to fracture the three sample bodies. Press R to reset. |
 | `test_interact_cpp.tscn` | Move with WASD and check wall fading around the player and camera pivot. The last fade-wall refactor already called out odd behavior in this scene. |
-| `humanoid_demo/humanoid_demo.tscn` | WASD moves and sets facing when there is no arrow-key aim. Shift jumps, Space plays an attack, E reloads, Q equips or stows, and Tab swaps models. |
+| `humanoid_demo/humanoid_demo.tscn` | WASD moves and sets facing when there is no arrow-key aim. Shift jumps, Space attacks (hold for the SMG), E reloads firearms, Q equips or stows, and Tab swaps models. Keys 1–5 select pistol, revolver, shotgun, SMG, and knife. |
 
 For headless checks, import with `--headless --editor --import --path test_project` and run each scene with `--headless --path test_project --quit-after 90 SCENE.tscn`.
 

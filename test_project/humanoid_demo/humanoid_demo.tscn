@@ -62,4 +62,4 @@ shape = SubResource("FloorShape")
 [node name="Controls" type="Label" parent="."]
 offset_left = 16.0
 offset_top = 16.0
-text = "WASD  Move     Arrows  Aim     Shift  Jump     Space  Attack     E  Reload     Q  Equip / stow     Tab  Swap model"
+text = "1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife"
