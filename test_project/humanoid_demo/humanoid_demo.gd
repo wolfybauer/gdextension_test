@@ -75,7 +75,7 @@ func _select_weapon(index: int) -> void:
 	recoil_remaining = 0.0
 	backpedal_correction = Vector2.ZERO
 	_mount_weapon()
-	$Controls.text = "%s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Q Equip/stow  •  Shift Jump  •  Tab Swap model" % WEAPONS[index].name
+	$Controls.text = "%s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Q Equip/stow  •  Shift Jump  •  Tab Swap model  •  B Blood preview" % WEAPONS[index].name
 
 func _mount_weapon() -> void:
 	rig.mount_weapon(weapon, equipped)
@@ -216,5 +216,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			var action_name := "equip_" if equipped else "stow_"
 			var animation_stance := "melee" if WEAPONS[weapon_index].stance == &"melee" else "twohand"
 			action_active = rig.play_torso(StringName(action_name + animation_stance), 0.12)
+		KEY_B:
+			$Player/BloodController.splatter(-rig.global_basis.z)
 		KEY_ESCAPE:
 			get_tree().quit()

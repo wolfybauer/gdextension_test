@@ -245,7 +245,6 @@
         "TabBar",
         "TabContainer",
         "TextEdit",
-        "Texture2D",
         "TextureButton",
         "TextureProgressBar",
         "TextureRect",

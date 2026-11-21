@@ -1,0 +1,21 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="PackedScene" path="res://gde_test/assets/blood/blood_splatter.tscn" id="1"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain0.png" id="2"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain1.png" id="3"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain2.png" id="4"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain3.png" id="5"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain4.png" id="6"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain5.png" id="7"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain6.png" id="8"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain7.png" id="9"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain8.png" id="10"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain9.png" id="11"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain10.png" id="12"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain11.png" id="13"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain12.png" id="14"]
+[ext_resource type="Texture2D" path="res://gde_test/assets/blood/stains/stain13.png" id="15"]
+
+[node name="BloodController" type="BloodController3D"]
+splatter_scene = ExtResource("1")
+stain_textures = Array[Texture2D]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15")])

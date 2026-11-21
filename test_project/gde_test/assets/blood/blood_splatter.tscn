@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://3v37l4vqjvsk"]
+
+[ext_resource type="Shader" uid="uid://cbcldcqdmp7vj" path="res://gde_test/assets/blood/blood.gdshader" id="1_mnu00"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_shape"]
+noise_type = 3
+frequency = 0.08
+fractal_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_shape"]
+width = 64
+height = 64
+noise = SubResource("FastNoiseLite_shape")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_prs26"]
+render_priority = 0
+shader = ExtResource("1_mnu00")
+shader_parameter/blood_color = Color(0.38, 0.018, 0.029, 1)
+shader_parameter/shape_noise = SubResource("NoiseTexture2D_shape")
+
+[sub_resource type="Gradient" id="Gradient_fade"]
+offsets = PackedFloat32Array(0, 0.22, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_fade"]
+gradient = SubResource("Gradient_fade")
+
+[sub_resource type="Curve" id="Curve_yt6k8"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.32), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_4r8wd"]
+curve = SubResource("Curve_yt6k8")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_p28qn"]
+lifetime_randomness = 0.2
+spread = 22.0
+initial_velocity_min = 2.0
+initial_velocity_max = 4.0
+radial_velocity_min = -2.23517e-05
+radial_velocity_max = 2.99998
+linear_accel_min = 4.0
+linear_accel_max = 4.0
+radial_accel_min = -2.23517e-06
+radial_accel_max = 0.999998
+scale_min = 0.35
+scale_max = 2.0
+scale_curve = SubResource("CurveTexture_4r8wd")
+scale_over_velocity_max = 2.0
+color_ramp = SubResource("GradientTexture_fade")
+hue_variation_min = -0.100000024
+hue_variation_max = 0.09999997
+collision_mode = 2
+sub_emitter_mode = 3
+sub_emitter_amount_at_collision = 1
+
+[sub_resource type="QuadMesh" id="QuadMesh_q885a"]
+size = Vector2(0.3, 0.22)
+
+[node name="BloodSplatter" type="GPUParticles3D" unique_id=1474633760]
+material_override = SubResource("ShaderMaterial_prs26")
+cast_shadow = 0
+emitting = false
+amount = 18
+lifetime = 0.3
+one_shot = true
+explosiveness = 0.9
+randomness = 0.7
+process_material = SubResource("ParticleProcessMaterial_p28qn")
+draw_pass_1 = SubResource("QuadMesh_q885a")

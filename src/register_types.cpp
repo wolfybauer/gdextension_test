@@ -5,6 +5,7 @@
 #include "fade/fade_floor.hpp"
 #include "rigid_character_body_3d.hpp"
 #include "humanoid/humanoid_rig_3d.hpp"
+#include "effects/blood_controller_3d.hpp"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -27,6 +28,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(FadeFloor3D)
 	GDREGISTER_CLASS(RigidCharacterBody3D)
 	GDREGISTER_CLASS(HumanoidRig3D)
+	GDREGISTER_CLASS(BloodController3D)
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

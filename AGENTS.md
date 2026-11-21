@@ -29,7 +29,7 @@ Open the editor with `~/00_apps/Godot_v4.8-beta4_linux.x86_64 --editor --path te
 | `test_fade_cpp.tscn` | Move with WASD and toggle between orthographic and perspective cameras. Check walls and floors as they pass between the player and camera. |
 | `test_fire_cpp.tscn` | Press Enter or Space to ignite the first crate. Press Up to fracture the three sample bodies. Press R to reset. |
 | `test_interact_cpp.tscn` | Move with WASD and check wall fading around the player and camera pivot. The last fade-wall refactor already called out odd behavior in this scene. |
-| `humanoid_demo/humanoid_demo.tscn` | WASD moves and sets facing when there is no arrow-key aim. Shift jumps, Space attacks (hold for the SMG), E reloads firearms, Q equips or stows, and Tab swaps models. Keys 1–5 select pistol, revolver, shotgun, SMG, and knife. |
+| `humanoid_demo/humanoid_demo.tscn` | WASD moves and sets facing when there is no arrow-key aim. Shift jumps, Space attacks (hold for the SMG), E reloads firearms, Q equips or stows, and Tab swaps models. Keys 1–5 select pistol, revolver, shotgun, SMG, and knife. B previews blood splatter in the facing direction. |
 
 For headless checks, import with `--headless --editor --import --path test_project` and run each scene with `--headless --path test_project --quit-after 90 SCENE.tscn`.
 
@@ -42,6 +42,10 @@ Instance `res://gde_test/assets/humanoid/humanoid.tscn` under the character body
 `HumanoidRig3D` provides independent `play_torso` and `play_legs` calls, directional `play_locomotion`, chest aiming through `set_aim_target`, and `mount_weapon` for attaching a model to the hand or stow socket. The `torso_animation_finished` signal reports the qualified clip name when a torso animation finishes. Player movement, input, combat, and state transitions are supplied by the game.
 
 The old animation sources are in the attached-drive `77_blender` and `77_new_blender` backups. `lib2/raw2` and `lib3/raw` contain the source FBXs, and the neighboring Blender and GLB files hold the assembled libraries. `scripts/armature_rotate.py` contains the rotated-armature bake. In `meleeguy0`, `tools/anim_lib_splitter.gd` derives the torso from the Spine hierarchy and the lower body from Hips and both leg hierarchies, then saves separate Godot libraries with the other layer's tracks disabled.
+
+## Blood effects
+
+Instance `res://gde_test/assets/blood/blood_controller.tscn` under the actor and call `splatter(direction)` from the damage handler. Particle bursts and stains are added to the current scene and expire independently of the actor. The stain is a horizontal textured mesh for the Compatibility renderer. Use `stain_y_offset` to align it with the ground when the actor's origin is raised.
 
 ## Using the extension in games
 

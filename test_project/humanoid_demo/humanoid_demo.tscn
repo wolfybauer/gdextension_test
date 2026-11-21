@@ -1,8 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://humanoid_demo/humanoid_demo.gd" id="1"]
 [ext_resource type="PackedScene" path="res://gde_test/assets/humanoid/humanoid.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://humanoid_demo/skullguy1.glb" id="3"]
+
+[ext_resource type="PackedScene" path="res://gde_test/assets/blood/blood_controller.tscn" id="4"]
 
 [sub_resource type="Shader" id="FloorGrid"]
 code = "shader_type spatial;
@@ -38,6 +40,8 @@ shape = SubResource("PlayerShape")
 
 [node name="Humanoid" parent="Player" instance=ExtResource("2")]
 model_scene = ExtResource("3")
+
+[node name="BloodController" parent="Player" instance=ExtResource("4")]
 
 [node name="Camera3D" type="Camera3D" parent="Player"]
 position = Vector3(0, 6.2, 5)
