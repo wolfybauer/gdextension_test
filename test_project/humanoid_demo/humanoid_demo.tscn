@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://ct4ccemmle6io"]
 
-[ext_resource type="Script" path="res://humanoid_demo/humanoid_demo.gd" id="1"]
+[ext_resource type="Script" uid="uid://ct2uqannuk7t8" path="res://humanoid_demo/humanoid_demo.gd" id="1"]
 [ext_resource type="PackedScene" path="res://gde_test/assets/humanoid/humanoid.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://humanoid_demo/skullguy1.glb" id="3"]
-
+[ext_resource type="PackedScene" uid="uid://cdfgsw0oq1s8l" path="res://humanoid_demo/skullguy1.glb" id="3"]
 [ext_resource type="PackedScene" path="res://gde_test/assets/blood/blood_controller.tscn" id="4"]
+
+[sub_resource type="CapsuleShape3D" id="PlayerShape"]
 
 [sub_resource type="Shader" id="FloorGrid"]
 code = "shader_type spatial;
@@ -18,55 +19,55 @@ void fragment() {
 "
 
 [sub_resource type="ShaderMaterial" id="FloorMaterial"]
+render_priority = 0
 shader = SubResource("FloorGrid")
 
 [sub_resource type="PlaneMesh" id="Floor"]
 material = SubResource("FloorMaterial")
 size = Vector2(80, 80)
 
-[sub_resource type="CapsuleShape3D" id="PlayerShape"]
-
 [sub_resource type="BoxShape3D" id="FloorShape"]
 size = Vector3(80, 0.2, 80)
 
-[node name="HumanoidDemo" type="Node3D"]
+[node name="HumanoidDemo" type="Node3D" unique_id=1832707396]
 script = ExtResource("1")
 
-[node name="Enemies" type="Node3D" parent="."]
+[node name="Enemies" type="Node3D" parent="." unique_id=325732888]
 
-[node name="Player" type="CharacterBody3D" parent="."]
+[node name="Player" type="CharacterBody3D" parent="." unique_id=1199416492]
 collision_mask = 3
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
-position = Vector3(0, 1, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=886321347]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("PlayerShape")
 
-[node name="Humanoid" parent="Player" instance=ExtResource("2")]
+[node name="Humanoid" parent="Player" unique_id=943200967 instance=ExtResource("2")]
 model_scene = ExtResource("3")
 
-[node name="BloodController" parent="Player" instance=ExtResource("4")]
+[node name="Controller" type="HumanoidController3D" parent="Player" unique_id=115764677]
 
-[node name="Camera3D" type="Camera3D" parent="Player"]
-position = Vector3(0, 6.2, 5)
-rotation_degrees = Vector3(-45, 0, 0)
+[node name="BloodController" parent="Player" unique_id=1662816989 instance=ExtResource("4")]
+
+[node name="Camera3D" type="Camera3D" parent="Player" unique_id=1578325887]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 6.2, 5)
 projection = 1
-size = 6.0
 current = true
+size = 6.0
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-53, 130, 0)
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2046274610]
+transform = Transform3D(-0.64278764, -0.6117903, 0.46101707, 0, 0.60181504, 0.79863554, -0.76604444, 0.51335305, -0.38683927, 0, 0, 0)
 shadow_enabled = true
 
-[node name="Floor" type="MeshInstance3D" parent="."]
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=490928639]
 mesh = SubResource("Floor")
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=2021372415]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
-position = Vector3(0, -0.1, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1071700956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("FloorShape")
 
-[node name="Controls" type="Label" parent="."]
+[node name="Controls" type="Label" parent="." unique_id=692020949]
 offset_left = 16.0
 offset_top = 16.0
-text = "1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife"
+text = "1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat"
