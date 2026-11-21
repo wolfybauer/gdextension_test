@@ -4,12 +4,14 @@ const SKULLGUY = preload("skullguy1.glb")
 const GENERIC = preload("generic_guy.glb")
 const JabHipCompensation = preload("jab_hip_compensation.gd")
 const ENEMY_SCENE = preload("enemies/demo_enemy.tscn")
+const BULLET_TRACER = preload("bullet_tracer.tscn")
 const MAX_ENEMIES := 8
+const SHOTGUN_SPREAD := [-27.0, -13.0, -3.0, 3.0, 13.0, 27.0]
 const WEAPONS := [
-	{"scene": preload("pistol.glb"), "name": "Pistol", "stance": &"pistol", "cooldown": 0.2, "automatic": false, "recoil": 0.32},
-	{"scene": preload("revolver.glb"), "name": "Revolver", "stance": &"pistol", "cooldown": 0.3, "automatic": false, "recoil": 0.42},
-	{"scene": preload("shotgun.glb"), "name": "Shotgun", "stance": &"twohand", "cooldown": 0.35, "automatic": false, "recoil": 0.52},
-	{"scene": preload("smg.glb"), "name": "SMG", "stance": &"pistol", "cooldown": 0.1, "automatic": true, "recoil": 0.24},
+	{"scene": preload("pistol.glb"), "muzzle": Vector3(0, 0.082, -0.217), "name": "Pistol", "stance": &"pistol", "cooldown": 0.2, "automatic": false, "recoil": 0.32},
+	{"scene": preload("revolver.glb"), "muzzle": Vector3(0, 0.085, -0.313), "name": "Revolver", "stance": &"pistol", "cooldown": 0.3, "automatic": false, "recoil": 0.42},
+	{"scene": preload("shotgun.glb"), "muzzle": Vector3(0, 0.044, -0.785), "name": "Shotgun", "stance": &"twohand", "cooldown": 0.35, "automatic": false, "recoil": 0.52},
+	{"scene": preload("smg.glb"), "muzzle": Vector3(0, 0.087, -0.371), "name": "SMG", "stance": &"pistol", "cooldown": 0.1, "automatic": true, "recoil": 0.24},
 	{"scene": preload("knife.glb"), "name": "Knife", "stance": &"melee", "cooldown": 0.2, "automatic": false, "recoil": 0.0},
 ]
 # Mounts are Skullguy grip/stow, then generic grip/stow.
@@ -112,8 +114,29 @@ func _try_fire() -> void:
 		return
 	recoil_remaining = RECOIL_DURATION
 	shot_cooldown = WEAPONS[weapon_index].cooldown
-	var two_handed: bool = WEAPONS[weapon_index].stance == &"twohand"
-	_hit_enemy(_attack_direction(), 18.0 if two_handed else 24.0, 2 if two_handed else 1)
+	var shotgun: bool = WEAPONS[weapon_index].stance == &"twohand"
+	var direction := _attack_direction()
+	var muzzle := weapon.to_global(WEAPONS[weapon_index].muzzle)
+	var origin := player.global_position + Vector3.UP * 1.05
+	var spread := SHOTGUN_SPREAD if shotgun else [0.0]
+	var damage: Dictionary[Node, int] = {}
+	for angle in spread:
+		var pellet_direction := direction.rotated(Vector3.UP, deg_to_rad(angle))
+		var endpoint := origin + pellet_direction * (18.0 if shotgun else 24.0)
+		var hit := _trace_attack(origin, endpoint)
+		var enemy := _hit_target(hit)
+		if enemy:
+			damage[enemy] = damage.get(enemy, 0) + 1
+		_spawn_tracer(muzzle, pellet_direction, hit.get("position", endpoint))
+	for enemy in damage:
+		enemy.take_hit(direction, damage[enemy])
+
+func _spawn_tracer(muzzle: Vector3, direction: Vector3, hit_point: Vector3) -> void:
+	# Keep the lower damage ray's hit depth without tilting the tracer down.
+	var distance := maxf((hit_point - muzzle).dot(direction), 0.0)
+	var tracer := BULLET_TRACER.instantiate()
+	add_child(tracer)
+	tracer.launch(muzzle, muzzle + direction * distance)
 
 func _spawn_enemy(position: Vector3) -> void:
 	if $Enemies.get_child_count() >= MAX_ENEMIES:
@@ -133,12 +156,18 @@ func _attack_direction() -> Vector3:
 		return Vector3(aim_input.x, 0, aim_input.y).normalized()
 	return -rig.global_basis.z.normalized()
 
+func _trace_attack(origin: Vector3, endpoint: Vector3) -> Dictionary:
+	var query := PhysicsRayQueryParameters3D.create(origin, endpoint, 3, [player.get_rid()])
+	return get_world_3d().direct_space_state.intersect_ray(query)
+
+func _hit_target(hit: Dictionary) -> Node:
+	var enemy := hit.get("collider") as Node
+	return enemy if enemy and enemy.is_in_group("demo_enemies") else null
+
 func _hit_enemy(direction: Vector3, distance: float, damage: int) -> void:
 	var origin := player.global_position + Vector3.UP * 1.05
-	var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * distance, 3, [player.get_rid()])
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	var enemy := hit.get("collider") as Node
-	if enemy and enemy.is_in_group("demo_enemies"):
+	var enemy := _hit_target(_trace_attack(origin, origin + direction * distance))
+	if enemy:
 		enemy.take_hit(direction, damage)
 
 func _physics_process(delta: float) -> void:
