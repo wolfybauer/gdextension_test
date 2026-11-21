@@ -75,7 +75,7 @@
     "tools":true,
     ".clang-format": true,
     ".editorconfig": true,
-    ".gdignore": true,
+    // ".gdignore": true,
     ".gitattributes": true,
     ".gitmodules": true,
     ".sconsign.dblite": true,
