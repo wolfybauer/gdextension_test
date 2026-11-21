@@ -109,6 +109,7 @@ bool HumanoidRig3D::configure(const Ref<PackedScene> &model_scene, const Ref<Ani
     aim = new_aim;
     aim_target = new_target;
     torso->connect("animation_finished", callable_mp(this, &HumanoidRig3D::on_torso_finished));
+    update_aim_weapon_mount();
     return true;
 }
 
@@ -150,6 +151,30 @@ bool HumanoidRig3D::mount_weapon(Node3D *weapon, bool equipped) {
     return weapon->get_parent() == socket;
 }
 
+void HumanoidRig3D::configure_aim_weapon(Node3D *weapon, const Transform3D &grip, const Transform3D &stow_mount) {
+    aim_weapon_id = weapon ? ObjectID(weapon->get_instance_id()) : ObjectID();
+    weapon_grip = grip;
+    weapon_stow = stow_mount;
+    update_aim_weapon_mount();
+}
+
+void HumanoidRig3D::set_weapon_aiming(bool aiming) {
+    if (weapon_aiming != aiming) {
+        weapon_aiming = aiming;
+        update_aim_weapon_mount();
+    }
+}
+
+void HumanoidRig3D::update_aim_weapon_mount() {
+    if (!aim_weapon_id.is_valid()) {
+        return;
+    }
+    auto *weapon = Object::cast_to<Node3D>(ObjectDB::get_instance(aim_weapon_id));
+    if (mount_weapon(weapon, weapon_aiming)) {
+        weapon->set_transform(weapon_aiming ? weapon_grip : weapon_stow);
+    }
+}
+
 void HumanoidRig3D::set_aim_target(const Vector3 &world_position) {
     if (aim) {
         aim_target->set_global_position(world_position);
@@ -181,6 +206,8 @@ void HumanoidRig3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("play_legs", "clip", "blend", "speed"), &HumanoidRig3D::play_legs, DEFVAL(-1.0), DEFVAL(1.0));
     ClassDB::bind_method(D_METHOD("play_locomotion", "local_motion", "stance", "blend"), &HumanoidRig3D::play_locomotion, DEFVAL(0.15));
     ClassDB::bind_method(D_METHOD("mount_weapon", "weapon", "equipped"), &HumanoidRig3D::mount_weapon);
+    ClassDB::bind_method(D_METHOD("configure_aim_weapon", "weapon", "grip", "stow_mount"), &HumanoidRig3D::configure_aim_weapon);
+    ClassDB::bind_method(D_METHOD("set_weapon_aiming", "aiming"), &HumanoidRig3D::set_weapon_aiming);
     ClassDB::bind_method(D_METHOD("set_aim_target", "world_position"), &HumanoidRig3D::set_aim_target);
     ClassDB::bind_method(D_METHOD("clear_aim"), &HumanoidRig3D::clear_aim);
     ClassDB::bind_method(D_METHOD("get_skeleton"), &HumanoidRig3D::get_skeleton);

@@ -3,6 +3,8 @@ extends Node3D
 const SKULLGUY = preload("skullguy1.glb")
 const GENERIC = preload("generic_guy.glb")
 const JabHipCompensation = preload("jab_hip_compensation.gd")
+const ENEMY_SCENE = preload("enemies/demo_enemy.tscn")
+const MAX_ENEMIES := 8
 const WEAPONS := [
 	{"scene": preload("pistol.glb"), "name": "Pistol", "stance": &"pistol", "cooldown": 0.2, "automatic": false, "recoil": 0.32},
 	{"scene": preload("revolver.glb"), "name": "Revolver", "stance": &"pistol", "cooldown": 0.3, "automatic": false, "recoil": 0.42},
@@ -48,17 +50,21 @@ const JUMP_SPEED := 4.245
 @onready var player: CharacterBody3D = $Player
 @onready var rig = $Player/Humanoid
 var use_skullguy := true
-var equipped := true
+var equipped := false
 var action_active := false
 var recoil_remaining := 0.0
 var backpedal_correction := Vector2.ZERO
 var weapon_index := 0
 var shot_cooldown := 0.0
 var weapon: Node3D
+var appearance_rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_select_weapon(0)
 	JabHipCompensation.new().setup(rig)
+	appearance_rng.randomize()
+	for position in [Vector3(-4.5, 0, -3), Vector3(4.5, 0, -3), Vector3(0, 0, -5.5)]:
+		_spawn_enemy(position)
 	rig.torso_animation_finished.connect(func(_clip): action_active = false)
 
 func _select_weapon(index: int) -> void:
@@ -75,16 +81,28 @@ func _select_weapon(index: int) -> void:
 	recoil_remaining = 0.0
 	backpedal_correction = Vector2.ZERO
 	_mount_weapon()
-	$Controls.text = "%s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Q Equip/stow  •  Shift Jump  •  Tab Swap model  •  B Blood preview" % WEAPONS[index].name
+	$Controls.text = "%s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  B Blood preview" % WEAPONS[index].name
 
 func _mount_weapon() -> void:
-	rig.mount_weapon(weapon, equipped)
-	var mount_index := 0 if use_skullguy else 2
-	if not equipped:
-		mount_index += 1
-	var mount: Array = WEAPON_MOUNTS[WEAPONS[weapon_index].stance][mount_index]
-	weapon.position = mount[0]
-	weapon.rotation = mount[1]
+	var index := 0 if use_skullguy else 2
+	var mounts: Array = WEAPON_MOUNTS[WEAPONS[weapon_index].stance]
+	var grip: Array = mounts[index]
+	var stow: Array = mounts[index + 1]
+	rig.configure_aim_weapon(weapon,
+		Transform3D(Basis.from_euler(grip[1]), grip[0]),
+		Transform3D(Basis.from_euler(stow[1]), stow[0]))
+
+func _sync_weapon_aim(aiming: bool) -> void:
+	if equipped == aiming:
+		return
+	equipped = aiming
+	rig.set_weapon_aiming(aiming)
+	if not aiming:
+		recoil_remaining = 0.0
+		var torso: AnimationPlayer = rig.get_torso_player()
+		if torso.current_animation == &"main/reload":
+			torso.stop()
+			action_active = false
 
 func _has_firearm() -> bool:
 	return equipped and WEAPONS[weapon_index].stance != &"melee"
@@ -94,14 +112,43 @@ func _try_fire() -> void:
 		return
 	recoil_remaining = RECOIL_DURATION
 	shot_cooldown = WEAPONS[weapon_index].cooldown
+	var two_handed: bool = WEAPONS[weapon_index].stance == &"twohand"
+	_hit_enemy(_attack_direction(), 18.0 if two_handed else 24.0, 2 if two_handed else 1)
+
+func _spawn_enemy(position: Vector3) -> void:
+	if $Enemies.get_child_count() >= MAX_ENEMIES:
+		return
+	var enemy := ENEMY_SCENE.instantiate()
+	$Enemies.add_child(enemy)
+	enemy.global_position = position
+	if not enemy.initialize(player, appearance_rng):
+		enemy.queue_free()
+
+func _get_aim_input() -> Vector2:
+	return Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+
+func _attack_direction() -> Vector3:
+	var aim_input := _get_aim_input()
+	if not aim_input.is_zero_approx():
+		return Vector3(aim_input.x, 0, aim_input.y).normalized()
+	return -rig.global_basis.z.normalized()
+
+func _hit_enemy(direction: Vector3, distance: float, damage: int) -> void:
+	var origin := player.global_position + Vector3.UP * 1.05
+	var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * distance, 3, [player.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var enemy := hit.get("collider") as Node
+	if enemy and enemy.is_in_group("demo_enemies"):
+		enemy.take_hit(direction, damage)
 
 func _physics_process(delta: float) -> void:
 	shot_cooldown = maxf(shot_cooldown - delta, 0.0)
+	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var aim_input := _get_aim_input()
+	var aiming := not aim_input.is_zero_approx()
+	_sync_weapon_aim(aiming)
 	if equipped and WEAPONS[weapon_index].automatic and Input.is_physical_key_pressed(KEY_SPACE):
 		_try_fire()
-	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	var aim_input := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	var aiming := not aim_input.is_zero_approx()
 	var recoiling := recoil_remaining > 0.0
 	var facing := aim_input if aiming else move
 	var backpedaling := aiming and _has_firearm() and player.is_on_floor() and move.dot(aim_input) <= -0.701
@@ -200,22 +247,24 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if player.is_on_floor():
 				player.velocity.y = JUMP_SPEED
 		KEY_SPACE:
+			_sync_weapon_aim(not _get_aim_input().is_zero_approx())
 			if _has_firearm():
 				_try_fire()
 			elif not action_active:
 				var clips := [&"melee1", &"melee2", &"punch_right_jab"] if equipped else [&"punch0", &"punch1", &"punch2", &"punch_right_jab"]
 				action_active = rig.play_torso(clips.pick_random(), 0.08)
+				if action_active:
+					_hit_enemy(_attack_direction(), 1.8, 2 if equipped else 1)
 		KEY_E:
+			_sync_weapon_aim(not _get_aim_input().is_zero_approx())
 			if _has_firearm():
 				recoil_remaining = 0.0
 				action_active = rig.play_torso(&"reload", 0.12)
-		KEY_Q:
-			recoil_remaining = 0.0
-			equipped = not equipped
-			_mount_weapon()
-			var action_name := "equip_" if equipped else "stow_"
-			var animation_stance := "melee" if WEAPONS[weapon_index].stance == &"melee" else "twohand"
-			action_active = rig.play_torso(StringName(action_name + animation_stance), 0.12)
+		KEY_R:
+			var spread := appearance_rng.randf_range(-0.8, 0.8)
+			var spawn_position := player.global_position + _attack_direction().rotated(Vector3.UP, spread) * 5.0
+			spawn_position.y = 0.0
+			_spawn_enemy(spawn_position)
 		KEY_B:
 			$Player/BloodController.splatter(-rig.global_basis.z)
 		KEY_ESCAPE:
