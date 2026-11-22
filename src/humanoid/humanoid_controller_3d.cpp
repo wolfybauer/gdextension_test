@@ -55,6 +55,7 @@ void HumanoidController3D::configure(CharacterBody3D *new_body, HumanoidRig3D *n
     }
     body = new_body;
     rig = new_rig;
+    knockback_velocity = Vector3();
     action = Action::LOCOMOTION;
     impact_pending = false;
     if (rig) {
@@ -102,31 +103,47 @@ void HumanoidController3D::set_input(const Vector2 &new_move, const Vector2 &new
     emit_signal("aiming_changed", aiming);
 }
 
-void HumanoidController3D::step(double seconds) {
+void HumanoidController3D::step(double seconds, bool animate) {
     if (!body || !rig || !rig->get_torso_player() || !rig->get_legs_player() || seconds <= 0.0) {
         return;
     }
     const float delta = seconds;
     cooldown_left = MAX(cooldown_left - delta, 0.0f);
-    if (trigger_held && automatic && has_firearm()) {
+    if (animate && trigger_held && automatic && has_firearm()) {
         attack();
     }
-    update_impact(rig->get_torso_player());
+    if (animate) {
+        update_impact(rig->get_torso_player());
+    }
     const bool bat_swing = action == Action::BAT_SWING;
-    const Vector2 movement = bat_swing ? Vector2() : move;
-    const Vector2 facing = aiming ? aim : movement;
+    const Vector2 movement = animate && !bat_swing ? move : Vector2();
+    const bool committed_swing = bat_swing || action == Action::MELEE;
+    const Vector2 facing = committed_swing ? Vector2(swing_direction.x, swing_direction.z) :
+            (aiming ? aim : movement);
     const float weight = 1.0f - Math::pow(0.85f, delta * 60.0f);
 
     Vector3 velocity = body->get_velocity();
     velocity.x = Math::lerp(velocity.x, movement.x * move_speed / 1.5f, weight);
     velocity.z = Math::lerp(velocity.z, movement.y * move_speed, weight);
+    if (!knockback_velocity.is_zero_approx()) {
+        velocity.x = knockback_velocity.x;
+        velocity.z = knockback_velocity.z;
+    }
     if (!body->is_on_floor()) {
         velocity += body->get_gravity() * delta;
     }
     body->set_velocity(velocity);
     body->move_and_slide();
+    if (!knockback_velocity.is_zero_approx()) {
+        const Vector3 resolved_velocity = body->get_velocity();
+        knockback_velocity = Vector3(resolved_velocity.x, 0, resolved_velocity.z)
+                .move_toward(Vector3(), 18.0f * delta);
+    }
+    if (!animate) {
+        return;
+    }
 
-    if (!bat_swing && !facing.is_zero_approx()) {
+    if (!facing.is_zero_approx()) {
         Vector3 rotation = rig->get_rotation();
         rotation.y = Math::lerp_angle(rotation.y, facing_yaw(Vector3(facing.x, 0, facing.y)), weight);
         rig->set_rotation(rotation);
@@ -135,6 +152,13 @@ void HumanoidController3D::step(double seconds) {
     update_aim();
     recoil_left = MAX(recoil_left - delta, 0.0f);
     update_animation(bat_swing);
+}
+
+void HumanoidController3D::apply_knockback(const Vector3 &direction, float speed) {
+    const Vector3 horizontal(direction.x, 0, direction.z);
+    if (speed > 0.0f && !horizontal.is_zero_approx()) {
+        knockback_velocity = horizontal.normalized() * speed;
+    }
 }
 
 bool HumanoidController3D::attack() {
@@ -332,7 +356,8 @@ void HumanoidController3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("configure_weapon", "weapon", "style", "cooldown", "automatic", "recoil", "reversed"),
             &HumanoidController3D::configure_weapon);
     ClassDB::bind_method(D_METHOD("set_input", "move", "aim", "trigger_held"), &HumanoidController3D::set_input, DEFVAL(false));
-    ClassDB::bind_method(D_METHOD("step", "delta"), &HumanoidController3D::step);
+    ClassDB::bind_method(D_METHOD("step", "delta", "animate"), &HumanoidController3D::step, DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("apply_knockback", "direction", "speed"), &HumanoidController3D::apply_knockback);
     ClassDB::bind_method(D_METHOD("attack"), &HumanoidController3D::attack);
     ClassDB::bind_method(D_METHOD("reload"), &HumanoidController3D::reload);
     ClassDB::bind_method(D_METHOD("jump"), &HumanoidController3D::jump);

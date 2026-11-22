@@ -21,7 +21,8 @@ public:
     void configure(CharacterBody3D *body, HumanoidRig3D *rig);
     void configure_weapon(Node3D *weapon, WeaponStyle style, float cooldown, bool automatic, float recoil, bool reversed);
     void set_input(const Vector2 &move, const Vector2 &aim, bool trigger_held);
-    void step(double delta);
+    void step(double delta, bool animate = true);
+    void apply_knockback(const Vector3 &direction, float speed);
     bool attack();
     void reload();
     void jump();
@@ -49,6 +50,7 @@ private:
     Vector2 aim;
     Vector2 aim_correction;
     Vector3 swing_direction;
+    Vector3 knockback_velocity;
     float move_speed = 5.0f;
     float cooldown = 0.0f;
     float cooldown_left = 0.0f;
