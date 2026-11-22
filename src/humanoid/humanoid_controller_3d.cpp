@@ -11,6 +11,7 @@ namespace godot {
 namespace {
 
 constexpr float RECOIL_DURATION = 0.15f;
+constexpr float HIT_REACTION_SPEED = 1.75f;
 constexpr float AIM_DISTANCE = 3.0f;
 constexpr float BAT_IMPACT_TIME = 0.32f / 1.2f;
 
@@ -56,6 +57,7 @@ void HumanoidController3D::configure(CharacterBody3D *new_body, HumanoidRig3D *n
     body = new_body;
     rig = new_rig;
     knockback_velocity = Vector3();
+    hit_recovery_left = 0.0f;
     action = Action::LOCOMOTION;
     impact_pending = false;
     if (rig) {
@@ -64,7 +66,7 @@ void HumanoidController3D::configure(CharacterBody3D *new_body, HumanoidRig3D *n
 }
 
 void HumanoidController3D::configure_weapon(Node3D *weapon, WeaponStyle new_style, float new_cooldown,
-        bool new_automatic, float recoil, bool new_reversed) {
+        bool new_automatic, float recoil, bool new_reversed, float spread) {
     if (new_style < UNARMED || new_style > BAT) {
         return;
     }
@@ -74,6 +76,7 @@ void HumanoidController3D::configure_weapon(Node3D *weapon, WeaponStyle new_styl
     cooldown = MAX(0.0f, new_cooldown);
     automatic = new_automatic;
     recoil_strength = MAX(0.0f, recoil);
+    spread_degrees = MAX(0.0f, spread);
     reversed = new_reversed;
     recoil_left = 0.0f;
     aim_correction = Vector2();
@@ -108,6 +111,7 @@ void HumanoidController3D::step(double seconds, bool animate) {
         return;
     }
     const float delta = seconds;
+    hit_recovery_left = MAX(hit_recovery_left - delta, 0.0f);
     cooldown_left = MAX(cooldown_left - delta, 0.0f);
     if (animate && trigger_held && automatic && has_firearm()) {
         attack();
@@ -154,6 +158,22 @@ void HumanoidController3D::step(double seconds, bool animate) {
     update_animation(bat_swing);
 }
 
+void HumanoidController3D::set_aim_error(float degrees) {
+    aim_error_degrees = MAX(0.0f, degrees);
+}
+
+bool HumanoidController3D::react_to_hit(const Vector3 &direction, float knockback_speed, float recovery_seconds) {
+    if (hit_recovery_left > 0.0f || !rig || !rig->get_torso_player()) {
+        return false;
+    }
+    apply_knockback(direction, knockback_speed);
+    cancel_action();
+    const bool playing = play_action(Action::REACTION, "damage0", 0.08, HIT_REACTION_SPEED);
+    const float duration = playing ? rig->get_torso_player()->get_current_animation_length() / HIT_REACTION_SPEED : 0.0f;
+    hit_recovery_left = duration + MAX(0.0f, recovery_seconds);
+    return true;
+}
+
 void HumanoidController3D::apply_knockback(const Vector3 &direction, float speed) {
     const Vector3 horizontal(direction.x, 0, direction.z);
     if (speed > 0.0f && !horizontal.is_zero_approx()) {
@@ -171,8 +191,13 @@ bool HumanoidController3D::attack() {
             return false;
         }
         cooldown_left = cooldown;
+        const float follow_up = recoil_left / RECOIL_DURATION;
+        const float spread = spread_degrees + aim_error_degrees;
+        const float error = UtilityFunctions::randf_range(-spread, spread);
+        const float kick = recoil_yaw * follow_up;
+        recoil_yaw = UtilityFunctions::randf_range(-recoil_strength, recoil_strength) * 0.12f;
         recoil_left = RECOIL_DURATION;
-        emit_signal("fire", direction);
+        emit_signal("fire", direction.rotated(Vector3(0, 1, 0), Math::deg_to_rad(error) + kick));
         return true;
     }
 
@@ -243,8 +268,9 @@ void HumanoidController3D::update_aim() {
     }
     const Vector3 direction = get_attack_direction();
     const float yaw = reversed ? profile.reversed_yaw : profile.normal_yaw;
-    const Vector2 adjusted = Vector2(direction.x, direction.z).rotated(Math::deg_to_rad(yaw) + aim_correction.x);
     const float weight = recoil_left / RECOIL_DURATION;
+    const Vector2 adjusted = Vector2(direction.x, direction.z).rotated(
+            Math::deg_to_rad(yaw) + aim_correction.x - recoil_yaw * weight * weight);
     const float height = (reversed ? profile.reversed_height : profile.normal_height) +
             aim_correction.y + recoil_strength * weight * weight;
     rig->set_aim_target(body->get_global_position() + Vector3(adjusted.x * AIM_DISTANCE, height, adjusted.y * AIM_DISTANCE));
@@ -306,8 +332,8 @@ void HumanoidController3D::update_impact(AnimationPlayer *torso) {
     }
 }
 
-bool HumanoidController3D::play_action(Action next, const StringName &clip, double blend) {
-    if (!rig->play_torso(clip, blend, 1.0)) {
+bool HumanoidController3D::play_action(Action next, const StringName &clip, double blend, double speed) {
+    if (!rig->play_torso(clip, blend, speed)) {
         return false;
     }
     action = next;
@@ -353,10 +379,13 @@ void HumanoidController3D::set_move_speed(float speed) {
 
 void HumanoidController3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("configure", "body", "rig"), &HumanoidController3D::configure);
-    ClassDB::bind_method(D_METHOD("configure_weapon", "weapon", "style", "cooldown", "automatic", "recoil", "reversed"),
-            &HumanoidController3D::configure_weapon);
+    ClassDB::bind_method(D_METHOD("configure_weapon", "weapon", "style", "cooldown", "automatic", "recoil", "reversed", "spread_degrees"),
+            &HumanoidController3D::configure_weapon, DEFVAL(0.0f));
     ClassDB::bind_method(D_METHOD("set_input", "move", "aim", "trigger_held"), &HumanoidController3D::set_input, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("step", "delta", "animate"), &HumanoidController3D::step, DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("set_aim_error", "degrees"), &HumanoidController3D::set_aim_error);
+    ClassDB::bind_method(D_METHOD("react_to_hit", "direction", "knockback_speed", "recovery_seconds"),
+            &HumanoidController3D::react_to_hit);
     ClassDB::bind_method(D_METHOD("apply_knockback", "direction", "speed"), &HumanoidController3D::apply_knockback);
     ClassDB::bind_method(D_METHOD("attack"), &HumanoidController3D::attack);
     ClassDB::bind_method(D_METHOD("reload"), &HumanoidController3D::reload);

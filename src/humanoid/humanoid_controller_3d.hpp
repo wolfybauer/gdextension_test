@@ -19,9 +19,11 @@ public:
     enum WeaponStyle { UNARMED, KNIFE, PISTOL, LONG_GUN, BAT };
 
     void configure(CharacterBody3D *body, HumanoidRig3D *rig);
-    void configure_weapon(Node3D *weapon, WeaponStyle style, float cooldown, bool automatic, float recoil, bool reversed);
+    void configure_weapon(Node3D *weapon, WeaponStyle style, float cooldown, bool automatic, float recoil, bool reversed, float spread_degrees = 0.0f);
     void set_input(const Vector2 &move, const Vector2 &aim, bool trigger_held);
     void step(double delta, bool animate = true);
+    void set_aim_error(float degrees);
+    bool react_to_hit(const Vector3 &direction, float knockback_speed, float recovery_seconds);
     void apply_knockback(const Vector3 &direction, float speed);
     bool attack();
     void reload();
@@ -56,6 +58,10 @@ private:
     float cooldown_left = 0.0f;
     float recoil_strength = 0.0f;
     float recoil_left = 0.0f;
+    float recoil_yaw = 0.0f;
+    float spread_degrees = 0.0f;
+    float aim_error_degrees = 0.0f;
+    float hit_recovery_left = 0.0f;
     bool aiming = false;
     bool trigger_held = false;
     bool automatic = false;
@@ -66,7 +72,7 @@ private:
     void update_backpedal_correction(float delta);
     void update_animation(bool bat_swing);
     void update_impact(AnimationPlayer *torso);
-    bool play_action(Action next, const StringName &clip, double blend);
+    bool play_action(Action next, const StringName &clip, double blend, double speed = 1.0);
     void cancel_action();
     void on_torso_finished(const StringName &clip);
     bool has_firearm() const;

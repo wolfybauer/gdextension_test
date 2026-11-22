@@ -12,6 +12,16 @@ const Combat = preload("demo_combat.gd")
 const Loadout = preload("demo_loadout.gd")
 const PSX_POOL := "res://humanoid_demo/psx_characters"
 
+@export_range(0.0, 3.0, 0.05) var enemy_aim_error_scale := 1.0:
+	set(value):
+		enemy_aim_error_scale = value
+		_update_enemy_difficulty()
+@export_range(0.25, 3.0, 0.05) var enemy_attack_interval_scale := 1.2:
+	set(value):
+		enemy_attack_interval_scale = value
+		_update_enemy_difficulty()
+@export_range(0.0, 2.0, 0.05, "suffix:s") var player_hit_recovery := 0.4
+
 @onready var player: CharacterBody3D = $Player
 @onready var rig = $Player/Humanoid
 @onready var controller: HumanoidController3D = $Player/Controller
@@ -94,12 +104,18 @@ func _spawn_enemy(pos: Vector3) -> void:
 	$Enemies.add_child(enemy)
 	enemy.global_position = pos
 	var model := load(enemy_models[appearance_rng.randi_range(0, enemy_models.size() - 1)]) as PackedScene
-	if not enemy.initialize(player, model, appearance_rng, _hit_player, _spawn_tracer):
+	if enemy.initialize(player, model, appearance_rng, _hit_player, _spawn_tracer):
+		enemy.set_difficulty(enemy_aim_error_scale, enemy_attack_interval_scale)
+	else:
 		enemy.queue_free()
 
+func _update_enemy_difficulty() -> void:
+	if is_node_ready():
+		for enemy in $Enemies.get_children():
+			enemy.set_difficulty(enemy_aim_error_scale, enemy_attack_interval_scale)
+
 func _hit_player(direction: Vector3, damage: int) -> void:
-	controller.apply_knockback(direction, minf(3.0 + damage, 7.0))
-	controller.play_reaction(&"damage0")
+	controller.react_to_hit(direction, minf(2.5 + damage * 0.5, 4.5), player_hit_recovery)
 	$Player/BloodController.splatter(direction)
 
 func _hit_target(hit: Dictionary) -> Node:

@@ -26,6 +26,9 @@ var style := HumanoidController3D.UNARMED
 var profile: Dictionary
 var attack_cooldown := 0.8
 var shots_left := 0
+var aim_error := 0.0
+var cadence := 1.0
+var attack_interval_scale := 1.0
 var hit_player: Callable
 var spawn_tracer: Callable
 
@@ -41,6 +44,10 @@ func initialize(player: CharacterBody3D, model: PackedScene, rng: RandomNumberGe
 	controller.fire.connect(_on_fire)
 	var index := rng.randi_range(0, PROFILES.size() - 1)
 	profile = PROFILES[index]
+	aim_error = rng.randf_range(8.0, 16.0)
+	cadence = rng.randf_range(0.9, 1.25)
+	controller.set_aim_error(aim_error)
+	attack_cooldown = rng.randf_range(0.8, 1.5)
 	if index < Loadout.WEAPONS.size():
 		weapon_setup = Loadout.WEAPONS[index]
 		style = Loadout.WEAPON_STYLES[weapon_setup.stance]
@@ -50,6 +57,10 @@ func initialize(player: CharacterBody3D, model: PackedScene, rng: RandomNumberGe
 			controller.aiming_changed.connect(
 				func(aiming: bool) -> void: rig.set_bat_grip(weapon if aiming else null))
 	return true
+
+func set_difficulty(aim_error_scale: float, interval_scale: float) -> void:
+	controller.set_aim_error(aim_error * aim_error_scale)
+	attack_interval_scale = interval_scale
 
 func _physics_process(delta: float) -> void:
 	if health <= 0:
@@ -84,7 +95,7 @@ func _physics_process(delta: float) -> void:
 		if shots_left == 0:
 			shots_left = profile.burst
 		shots_left -= 1
-		attack_cooldown = 0.16 if shots_left > 0 else profile.interval
+		attack_cooldown = 0.13 if shots_left > 0 else profile.interval * cadence * attack_interval_scale
 
 func _on_melee_attack(direction: Vector3, impact_style: int) -> void:
 	var hits := Combat.melee_targets(self, direction, impact_style, 1)

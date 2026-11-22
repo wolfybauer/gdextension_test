@@ -1,10 +1,10 @@
 extends RefCounted
 
 const WEAPONS := [
-	{"scene": preload("res://humanoid_demo/pistol.glb"), "muzzle": Vector3(0, 0.082, -0.217), "name": "Pistol", "stance": &"pistol", "cooldown": 0.2, "automatic": false, "recoil": 0.32},
-	{"scene": preload("res://humanoid_demo/revolver.glb"), "muzzle": Vector3(0, 0.085, -0.313), "name": "Revolver", "stance": &"pistol", "cooldown": 0.3, "automatic": false, "recoil": 0.42},
-	{"scene": preload("res://humanoid_demo/shotgun.glb"), "muzzle": Vector3(0, 0.044, -0.785), "name": "Shotgun", "stance": &"twohand", "cooldown": 0.35, "automatic": false, "recoil": 0.52},
-	{"scene": preload("res://humanoid_demo/smg.glb"), "muzzle": Vector3(0, 0.087, -0.371), "name": "SMG", "stance": &"pistol", "cooldown": 0.1, "automatic": true, "recoil": 0.24},
+	{"scene": preload("res://humanoid_demo/pistol.glb"), "muzzle": Vector3(0, 0.082, -0.217), "name": "Pistol", "stance": &"pistol", "cooldown": 0.2, "automatic": false, "recoil": 0.32, "spread": 1.0},
+	{"scene": preload("res://humanoid_demo/revolver.glb"), "muzzle": Vector3(0, 0.085, -0.313), "name": "Revolver", "stance": &"pistol", "cooldown": 0.3, "automatic": false, "recoil": 0.42, "spread": 1.5},
+	{"scene": preload("res://humanoid_demo/shotgun.glb"), "muzzle": Vector3(0, 0.044, -0.785), "name": "Shotgun", "stance": &"twohand", "cooldown": 0.35, "automatic": false, "recoil": 0.52, "spread": 2.0},
+	{"scene": preload("res://humanoid_demo/smg.glb"), "muzzle": Vector3(0, 0.087, -0.371), "name": "SMG", "stance": &"pistol", "cooldown": 0.1, "automatic": true, "recoil": 0.24, "spread": 2.5},
 	{"scene": preload("res://humanoid_demo/knife.glb"), "name": "Knife", "stance": &"melee", "cooldown": 0.2, "automatic": false, "recoil": 0.0},
 	{"scene": preload("res://humanoid_demo/bat/wooden_bat.tscn"), "name": "Wooden Bat", "stance": &"bat", "cooldown": 0.0, "automatic": false, "recoil": 0.0},
 ]
@@ -52,4 +52,4 @@ static func mount_weapon(rig: HumanoidRig3D, controller: HumanoidController3D,
 		Transform3D(Basis.from_euler(grip[1]), grip[0]),
 		Transform3D(Basis.from_euler(stow[1]), stow[0]))
 	controller.configure_weapon(weapon, WEAPON_STYLES[setup.stance],
-		setup.cooldown, setup.automatic, setup.recoil, not positive_z)
+		setup.cooldown, setup.automatic, setup.recoil, not positive_z, setup.get("spread", 0.0))
