@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <vector>
 
 #define FADE_SHADER_PATH "res://gde_test/assets/fade.gdshader"
 
@@ -52,7 +53,7 @@ private:
     static float s_global_y_margin;
 
     // exports
-    Ref<ShaderMaterial> _fade_mat;
+    std::vector<Ref<ShaderMaterial>> _fade_materials;
     Ref<Shader> _fade_shader;
     int render_prio_override = 0;
     bool render_prio_override_enable = false;

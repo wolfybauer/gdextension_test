@@ -68,6 +68,9 @@ func set_difficulty(aim_error_scale: float, interval_scale: float) -> void:
 	attack_interval_scale = interval_scale
 
 func _physics_process(delta: float) -> void:
+	if global_position.y < -12.0:
+		queue_free()
+		return
 	if health <= 0:
 		controller.step(delta, false)
 		return

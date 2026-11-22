@@ -1,5 +1,7 @@
 extends Node3D
 
+signal ignition_requested
+
 const HUMANOID = preload("res://gde_test/assets/humanoid/humanoid.tscn")
 const LISTENER = preload("res://humanoid_demo/psx_characters/extras/male/Character_Sheriff_N_01.fbx")
 
@@ -63,6 +65,8 @@ func contact(clip: StringName, actor: PhysicsBody3D) -> void:
 	match clip:
 		&"button":
 			button_on = not button_on
+			if button_on:
+				ignition_requested.emit()
 			var material := (selected.get_child(0) as MeshInstance3D).mesh.material as StandardMaterial3D
 			material.albedo_color = Color(0.39, 0.77, 0.33) if button_on else Color(0.78, 0.34, 0.14)
 		&"door":

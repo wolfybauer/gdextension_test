@@ -29,7 +29,7 @@ Open the editor with `~/00_apps/Godot_v4.8-beta4_linux.x86_64 --editor --path te
 | `test_fade_cpp.tscn` | Move with WASD and toggle between orthographic and perspective cameras. Check walls and floors as they pass between the player and camera. |
 | `test_fire_cpp.tscn` | Press Enter or Space to ignite the first crate. Press Up to fracture the three sample bodies. Press R to reset. |
 | `test_interact_cpp.tscn` | Move with WASD and check wall fading around the player and camera pivot. The last fade-wall refactor already called out odd behavior in this scene. |
-| `humanoid_demo/humanoid_demo.tscn` | WASD moves and sets facing when there is no arrow-key aim. Shift jumps, Space attacks (hold for the SMG), E reloads firearms and Tab swaps models. Aiming equips the weapon, and releasing aim stows it. Keys 1–7 select pistol, revolver, shotgun, SMG, knife, wooden bat, and grenade. Hold G for a fixed-angle throw preview and release G to throw the held item. F picks up a tossed weapon or uses a nearby interaction prop. H releases the yard hazards. The ramp gives access to a high ledge for testing landing damage. R spawns another randomized enemy. Shoot or strike the enemies to test their hit reaction and defeat animation. |
+| `humanoid_demo/humanoid_demo.tscn` | WASD moves and sets facing when there is no arrow-key aim. Shift jumps, Space attacks (hold for the SMG), E reloads firearms and Tab swaps models. Aiming equips the weapon, and releasing aim stows it. Keys 1–7 select pistol, revolver, shotgun, SMG, knife, wooden bat, and grenade. Hold G for a fixed-angle throw preview and release G to throw the held item. F picks up a tossed weapon or uses a nearby interaction prop. Use F at the orange switch to light the nearby crate pile. H releases the yard hazards. The imported `meleeguy0` layout has upper walkways and native wall and floor fades. R spawns another randomized enemy. Shoot or strike the enemies to test their hit reaction and defeat animation. |
 
 For headless checks, import with `--headless --editor --import --path test_project` and run each scene with `--headless --path test_project --quit-after 90 SCENE.tscn`.
 
@@ -47,7 +47,7 @@ The old animation sources are in the attached-drive `77_blender` and `77_new_ble
 
 Off-aim attacks use the held weapon. Handguns bash with the right-jab clip, and long guns use `smash_twohand`, retargeted from `Smash.fbx` for both facing profiles. The controller exposes `weapon_equipped_changed` for pose modifiers that follow the hand mount.
 
-Press F8 in the humanoid demo to open the grip tuner. It previews the current pose at the scrubber time and saves per-model, per-weapon fits to `user://humanoid_grips.cfg`. The demo loads the saved fit when equipping the weapon.
+Press K in the humanoid demo to open the grip tuner. It previews the current pose at the scrubber time and saves per-model, per-weapon fits to `user://humanoid_grips.cfg`. The demo loads the saved fit when equipping the weapon.
 
 The bat uses `aim_bat` and `swing_bat` in both facing profiles, retargeted from `Baseball Idle.fbx` and `Great Sword Slash.fbx`. The bat follows the right-hand socket, with a left-hand IK target on the grip.
 

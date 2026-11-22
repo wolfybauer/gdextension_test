@@ -29,7 +29,7 @@ void FadeWall3D::set_opacity(float op) {
 
 
 void FadeWall3D::check_fade(Node3D *target, Camera3D *camera, float max_dist, float fade_speed, float min_alpha) {
-    if (!_fade_mat.is_valid() || !target || !camera) {
+    if (_fade_materials.empty() || !target || !camera) {
         return;
     }
 
@@ -101,30 +101,34 @@ void FadeWall3D::_on_ready() {
         UtilityFunctions::push_error("[FadeWall3D] ", get_name(), " _on_ready : error loading shader. abort");
         return;
     }
-    _fade_mat.instantiate();
-    _fade_mat->set_shader(_fade_shader);
-
-    // assign render prio / y margin pointers
     _render_prio = render_prio_override_enable ? &render_prio_override : &s_global_render_priority;
     _y_margin = y_margin_override_enable ? &y_margin_override : &s_global_y_margin;
+    for (int surface = 0; surface < mesh->get_surface_count(); ++surface) {
+        Ref<ShaderMaterial> fade;
+        fade.instantiate();
+        fade->set_shader(_fade_shader);
+        Ref<StandardMaterial3D> original = mesh_inst->get_active_material(surface);
+        if (original.is_valid()) {
+            const Ref<Texture> texture = original->get("albedo_texture");
+            fade->set_shader_parameter("use_texture", texture.is_valid());
+            fade->set_shader_parameter("albedo_color", original->get_albedo());
+            if (texture.is_valid()) {
+                fade->set_shader_parameter("albedo_tex", texture);
+            }
+        }
+        mesh_inst->set_surface_override_material(surface, fade);
+        _fade_materials.push_back(fade);
+    }
     _apply_render_priority();
 
-    // get / set up the texture/color we'll be fading
-    Ref<StandardMaterial3D> old = mesh->surface_get_material(0);
-    if(old.is_valid()) {
-        Ref<Texture> tex = old->get("albedo_texture");
-        if(tex.is_valid()) {
-            _fade_mat->set_shader_parameter("albedo_tex", tex);
-            _fade_mat->set_shader_parameter("use_texture", true);
-            _fade_mat->set_shader_parameter("albedo_color", Color(1,1,1,1));
-        } else {
-            _fade_mat->set_shader_parameter("albedo_color", old->get_albedo());
-            _fade_mat->set_shader_parameter("use_texture", false);
-        }
-    }
-    mesh_inst->set_surface_override_material(0, _fade_mat);
-
-    precompute_bounds(mesh_inst, _aabb_min, _aabb_max, _center2d, _wall_normal); // TODO add error code
+    const AABB world_bounds = get_global_transform().xform(_local_aabb);
+    const Vector3 end = world_bounds.get_end();
+    _aabb_min = Vector2(world_bounds.position.x, world_bounds.position.z);
+    _aabb_max = Vector2(end.x, end.z);
+    _center2d = (_aabb_min + _aabb_max) * 0.5f;
+    const float dx = world_bounds.size.x;
+    const float dz = world_bounds.size.z;
+    _wall_normal = Math::abs(dx - dz) < 0.1f ? Vector2() : (dx > dz ? Vector2(0, 1) : Vector2(1, 0));
 
     add_to_group("fade_wall");
     set_physics_process(true);
@@ -137,12 +141,14 @@ void FadeWall3D::_on_physics_process(float delta) {
     if(Math::is_equal_approx(_fade_amount, _fade_target)) {
         return;
     }
-    if(!_fade_mat.is_valid()) {
+    if(_fade_materials.empty()) {
         return;
     }
     const float weight = Math::clamp(_fade_speed * delta, 0.0f, 1.0f);
     _fade_amount = Math::lerp(_fade_amount, _fade_target, weight);
-    _fade_mat->set_shader_parameter("opacity", _fade_amount);
+    for (const auto &fade : _fade_materials) {
+        fade->set_shader_parameter("opacity", _fade_amount);
+    }
 }
 
 void FadeWall3D::_notification(int p_what) {
@@ -241,10 +247,12 @@ void FadeWall3D::_bind_methods() {
 }
 
 void FadeWall3D::_apply_render_priority() {
-    if (!_fade_mat.is_valid() || !_render_prio) {
+    if (_fade_materials.empty() || !_render_prio) {
         return;
     }
-    _fade_mat->set_render_priority(*_render_prio);
+    for (const auto &fade : _fade_materials) {
+        fade->set_render_priority(*_render_prio);
+    }
 }
 
 

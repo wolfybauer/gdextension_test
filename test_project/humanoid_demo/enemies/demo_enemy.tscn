@@ -8,7 +8,7 @@
 radius = 0.36
 height = 1.82
 
-[node name="Enemy" type="RigidCharacterBody3D" groups=["demo_enemies"]]
+[node name="Enemy" type="RigidCharacterBody3D" groups=["demo_enemies", "fade_obj"]]
 collision_layer = 2
 collision_mask = 3
 mass = 4.0

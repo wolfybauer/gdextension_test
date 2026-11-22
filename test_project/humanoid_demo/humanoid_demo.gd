@@ -24,6 +24,9 @@ const PSX_POOL := "res://humanoid_demo/psx_characters"
 
 @onready var player: RigidCharacterBody3D = $Player
 @onready var rig = $Player/Humanoid
+@onready var camera: Camera3D = $Player/Camera3D
+@onready var fade_target: Marker3D = $Player/FadeTarget
+@onready var spawn_transform: Transform3D = player.global_transform
 @onready var controller: HumanoidController3D = $Player/Controller
 var model_index := 0
 var weapon_index := 0
@@ -54,11 +57,12 @@ func _ready() -> void:
 	throws.exploded.connect(_blast)
 	interactions = Interactions.new()
 	add_child(interactions)
+	interactions.ignition_requested.connect(yard.ignite_crates)
 	_select_weapon(0)
 	_update_health()
 	appearance_rng.randomize()
 	_collect_models(PSX_POOL)
-	for pos in [Vector3(-4.5, 0, -3), Vector3(4.5, 0, -3), Vector3(0, 0, -5.5)]:
+	for pos in [Vector3(2.0, 0.05, -5.0), Vector3(6.2, 0.05, -5.8), Vector3(10.0, 0.05, -4.5)]:
 		_spawn_enemy(pos)
 
 func _update_weapon_grip(equipped: bool) -> void:
@@ -85,7 +89,7 @@ func _equip(next_weapon: Node3D, index: int) -> void:
 	_update_controls()
 
 func _update_controls() -> void:
-	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact  •  H Release hazards  •  K Grip tuner" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed"]
+	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact / ignite at orange switch  •  H Release hazards  •  K Grip tuner" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed"]
 
 func _update_health() -> void:
 	$Health.text = "Health %d / %d%s" % [player_health, PLAYER_MAX_HEALTH, last_damage]
@@ -105,15 +109,19 @@ func _release_item(item: Node3D, direction: Vector3) -> void:
 	_update_controls()
 
 func _blast(center: Vector3) -> void:
-	for actor in $Enemies.get_children() + [player]:
-		var target: Vector3 = actor.global_position + Vector3.UP * 0.85
+	for actor in $Enemies.get_children() + [player] + get_tree().get_nodes_in_group("demo_burnable"):
+		var crate: bool = actor.is_in_group("demo_burnable")
+		var target: Vector3 = actor.global_position + (Vector3.ZERO if crate else Vector3.UP * 0.85)
 		if target.distance_to(center) > 2.2:
 			continue
 		var cover := PhysicsRayQueryParameters3D.create(center, target, 1, [actor.get_rid()])
 		if not get_world_3d().direct_space_state.intersect_ray(cover).is_empty():
 			continue
 		var outward := (target - center).normalized()
-		if actor == player:
+		if crate:
+			actor.ignite()
+			actor.apply_damage(35, outward)
+		elif actor == player:
 			_hit_player(outward, 3)
 		else:
 			actor.take_hit(outward, 3)
@@ -145,12 +153,15 @@ func _fire_weapon(direction: Vector3) -> void:
 		var pellet_direction := direction.rotated(Vector3.UP, deg_to_rad(angle))
 		var endpoint := origin + pellet_direction * (18.0 if shotgun else 24.0)
 		var hit := Combat.trace(player, origin, endpoint)
-		var enemy := _hit_target(hit)
-		if enemy:
-			damage[enemy] = damage.get(enemy, 0) + 1
+		var target := hit.get("collider") as Node
+		if target and (target.is_in_group("demo_enemies") or target.is_in_group("demo_burnable")):
+			damage[target] = damage.get(target, 0) + 1
 		_spawn_tracer(muzzle, pellet_direction, hit.get("position", endpoint))
-	for enemy in damage:
-		enemy.take_hit(direction, damage[enemy])
+	for target in damage:
+		if target.is_in_group("demo_burnable"):
+			target.apply_damage(damage[target] * 12, direction)
+		else:
+			target.take_hit(direction, damage[target])
 
 func _spawn_tracer(muzzle: Vector3, direction: Vector3, hit_point: Vector3) -> void:
 	# Keep the lower damage ray's hit depth without tilting the tracer down.
@@ -170,8 +181,8 @@ func _spawn_enemy(pos: Vector3) -> void:
 	if enemy_models.is_empty() or $Enemies.get_child_count() >= MAX_ENEMIES:
 		return
 	var enemy := ENEMY_SCENE.instantiate()
+	enemy.position = pos
 	$Enemies.add_child(enemy)
-	enemy.global_position = pos
 	var model := load(enemy_models[appearance_rng.randi_range(0, enemy_models.size() - 1)]) as PackedScene
 	if enemy.initialize(player, model, appearance_rng, _hit_player, _spawn_tracer):
 		enemy.set_difficulty(enemy_aim_error_scale, enemy_attack_interval_scale)
@@ -204,7 +215,7 @@ func _damage_player(direction: Vector3, damage: int, knockback: float, cause: St
 		get_tree().create_timer(maxf(duration, 1.0), false).timeout.connect(_respawn)
 
 func _respawn() -> void:
-	var spawn := Transform3D(Basis.IDENTITY, Vector3(0, 0.1, 0))
+	var spawn := spawn_transform
 	PhysicsServer3D.body_set_state(player.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, spawn)
 	player.global_transform = spawn
 	player.linear_velocity = Vector3.ZERO
@@ -212,18 +223,16 @@ func _respawn() -> void:
 	last_damage = ""
 	_update_health()
 
-func _hit_target(hit: Dictionary) -> Node:
-	var enemy := hit.get("collider") as Node
-	return enemy if enemy and enemy.is_in_group("demo_enemies") else null
-
 func _melee_attack(direction: Vector3, style: int) -> void:
-	var hits := Combat.melee_targets(player, direction, style, 2)
+	var hits := Combat.melee_targets(player, direction, style, 3)
 	for target in hits:
 		if target.is_in_group("demo_enemies"):
 			target.take_hit(hits[target], Combat.melee_damage(style))
+		elif target.is_in_group("demo_burnable"):
+			target.apply_damage(Combat.melee_damage(style) * 20, hits[target])
 
 func _read_input() -> void:
-	var right: Vector3 = $Player/Camera3D.global_basis.x
+	var right := camera.global_basis.x
 	var ground_right := Vector2(right.x, right.z).normalized()
 	var ground_down := Vector2(-ground_right.y, ground_right.x)
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -234,6 +243,12 @@ func _read_input() -> void:
 		Input.is_physical_key_pressed(KEY_SPACE) and not throw_preview)
 
 func _physics_process(delta: float) -> void:
+	var tree := get_tree()
+	FadeWall3D.check_fade_walls(tree, fade_target, camera, 5.0, 5.0, 0.25)
+	FadeFloor3D.check_fade_floors(tree, player, 2.0)
+	FadeFloor3D.check_fade_objects(tree, player, 2.0)
+	if player_health > 0 and player.global_position.y < -12.0:
+		_respawn()
 	if player_health <= 0:
 		throws.clear_preview()
 		controller.step(delta, false)
@@ -293,8 +308,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_R:
 			var spread := appearance_rng.randf_range(-0.8, 0.8)
 			var spawn_position := player.global_position + controller.get_attack_direction().rotated(Vector3.UP, spread) * 5.0
-			spawn_position.y = 0.0
-			_spawn_enemy(spawn_position)
+			var floor_hit := get_world_3d().direct_space_state.intersect_ray(
+				PhysicsRayQueryParameters3D.create(spawn_position + Vector3.UP * 1.4, spawn_position - Vector3.UP * 12.0, 1, [player.get_rid()]))
+			if not floor_hit.is_empty() and floor_hit.normal.y > 0.65:
+				_spawn_enemy(floor_hit.position + Vector3.UP * 0.06)
 		KEY_B:
 			$Player/BloodController.splatter(-rig.global_basis.z)
 		KEY_ESCAPE:
