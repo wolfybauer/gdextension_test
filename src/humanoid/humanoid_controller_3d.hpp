@@ -26,9 +26,13 @@ public:
     bool react_to_hit(const Vector3 &direction, float knockback_speed, float recovery_seconds);
     void apply_knockback(const Vector3 &direction, float speed);
     bool attack();
+    bool throw_item(Node3D *item);
+    bool interact(const StringName &clip, const Vector3 &direction);
+    bool is_throwing() const { return action == Action::THROW; }
     void reload();
     void jump();
     bool play_reaction(const StringName &clip);
+    double play_defeat();
     Vector3 get_attack_direction() const;
 
     void set_move_speed(float speed);
@@ -39,11 +43,12 @@ protected:
     static void _bind_methods();
 
 private:
-    enum class Action { LOCOMOTION, MELEE, RELOAD, BAT_SWING, REACTION };
+    enum class Action { LOCOMOTION, MELEE, RELOAD, BAT_SWING, REACTION, THROW, INTERACT };
 
     CharacterBody3D *body = nullptr;
     HumanoidRig3D *rig = nullptr;
     ObjectID weapon_id;
+    ObjectID thrown_item_id;
     WeaponStyle style = UNARMED;
     WeaponStyle impact_style = UNARMED;
     Action action = Action::LOCOMOTION;
@@ -67,11 +72,16 @@ private:
     bool automatic = false;
     bool reversed = false;
     bool impact_pending = false;
+    float interaction_time = 0.0f;
+    float interaction_event_time = 0.0f;
+    float interaction_duration = 0.0f;
 
     void update_aim();
     void update_backpedal_correction(float delta);
     void update_animation(bool bat_swing);
     void update_impact(AnimationPlayer *torso);
+    void update_interaction(float delta);
+    void update_weapon_mount();
     bool play_action(Action next, const StringName &clip, double blend, double speed = 1.0);
     void cancel_action();
     void on_torso_finished(const StringName &clip);

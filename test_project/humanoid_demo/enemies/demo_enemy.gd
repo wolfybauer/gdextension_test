@@ -48,7 +48,7 @@ func initialize(player: CharacterBody3D, model: PackedScene, rng: RandomNumberGe
 	cadence = rng.randf_range(0.9, 1.25)
 	controller.set_aim_error(aim_error)
 	attack_cooldown = rng.randf_range(0.8, 1.5)
-	if index < Loadout.WEAPONS.size():
+	if index < PROFILES.size() - 1:
 		weapon_setup = Loadout.WEAPONS[index]
 		style = Loadout.WEAPON_STYLES[weapon_setup.stance]
 		weapon = weapon_setup.scene.instantiate()
@@ -129,10 +129,5 @@ func take_hit(direction: Vector3, damage: int) -> void:
 	# Keep the capsule on the floor, but let living actors and attacks pass through.
 	collision_layer = 0
 	collision_mask = 1
-	controller.set_input(Vector2.ZERO, Vector2.ZERO)
-	rig.clear_aim()
-	controller.play_reaction(&"death0")
-	rig.play_legs(&"death0", 0.1)
-	var torso: AnimationPlayer = rig.get_torso_player()
-	var timeout := maxf(torso.current_animation_length + 0.4, 1.0)
+	var timeout := maxf(controller.play_defeat() + 0.4, 1.0)
 	get_tree().create_timer(timeout, false).timeout.connect(queue_free)

@@ -7,9 +7,16 @@ const WEAPONS := [
 	{"scene": preload("res://humanoid_demo/smg.glb"), "muzzle": Vector3(0, 0.087, -0.371), "name": "SMG", "stance": &"pistol", "cooldown": 0.1, "automatic": true, "recoil": 0.24, "spread": 2.5},
 	{"scene": preload("res://humanoid_demo/knife.glb"), "name": "Knife", "stance": &"melee", "cooldown": 0.2, "automatic": false, "recoil": 0.0},
 	{"scene": preload("res://humanoid_demo/bat/wooden_bat.tscn"), "name": "Wooden Bat", "stance": &"bat", "cooldown": 0.0, "automatic": false, "recoil": 0.0},
+	{"scene": preload("res://humanoid_demo/grenade.tscn"), "name": "Grenade", "stance": &"carry", "cooldown": 0.0, "automatic": false, "recoil": 0.0},
 ]
 # Mounts are Skullguy grip/stow, then generic grip/stow.
 const WEAPON_MOUNTS := {
+	&"carry": [
+		[Vector3(0.01, -0.09, 0.025), Vector3.ZERO],
+		[Vector3.ZERO, Vector3.ZERO],
+		[Vector3(-0.01, 0.09, 0.025), Vector3.ZERO],
+		[Vector3.ZERO, Vector3.ZERO],
+	],
 	&"bat": [
 		[Vector3(0.003, -0.058, 0.002), Vector3(2.18, 0, 1.02)],
 		[Vector3(0.13, -0.30, 0.15), Vector3(0, 0, -0.5)],
@@ -36,6 +43,7 @@ const WEAPON_MOUNTS := {
 	],
 }
 const WEAPON_STYLES := {
+	&"carry": HumanoidController3D.UNARMED,
 	&"pistol": HumanoidController3D.PISTOL,
 	&"twohand": HumanoidController3D.LONG_GUN,
 	&"melee": HumanoidController3D.KNIFE,
