@@ -1,4 +1,4 @@
-extends CharacterBody3D
+extends RigidCharacterBody3D
 
 const Loadout = preload("../demo_loadout.gd")
 const Combat = preload("../demo_combat.gd")
@@ -18,7 +18,7 @@ const PROFILES := [
 @onready var controller: HumanoidController3D = $Controller
 @onready var blood: BloodController3D = $BloodController
 
-var target: CharacterBody3D
+var target: PhysicsBody3D
 var health := 3
 var weapon: Node3D
 var weapon_setup: Dictionary
@@ -32,7 +32,7 @@ var attack_interval_scale := 1.0
 var hit_player: Callable
 var spawn_tracer: Callable
 
-func initialize(player: CharacterBody3D, model: PackedScene, rng: RandomNumberGenerator,
+func initialize(player: PhysicsBody3D, model: PackedScene, rng: RandomNumberGenerator,
 		on_player_hit: Callable, on_tracer: Callable) -> bool:
 	target = player
 	hit_player = on_player_hit
@@ -40,6 +40,7 @@ func initialize(player: CharacterBody3D, model: PackedScene, rng: RandomNumberGe
 	if not model or not rig.load_model(model, true):
 		return false
 	controller.configure(self, rig)
+	impact_damage.connect(_on_impact_damage)
 	controller.melee_attack.connect(_on_melee_attack)
 	controller.fire.connect(_on_fire)
 	var index := rng.randi_range(0, PROFILES.size() - 1)
@@ -52,10 +53,14 @@ func initialize(player: CharacterBody3D, model: PackedScene, rng: RandomNumberGe
 		weapon_setup = Loadout.WEAPONS[index]
 		style = Loadout.WEAPON_STYLES[weapon_setup.stance]
 		weapon = weapon_setup.scene.instantiate()
-		Loadout.mount_weapon(rig, controller, weapon, weapon_setup, true)
+		var grip_profile := Loadout.read_grip_profile(model, weapon_setup, true)
+		Loadout.mount_weapon(rig, controller, weapon, weapon_setup, true, grip_profile)
 		if style == HumanoidController3D.BAT:
-			controller.aiming_changed.connect(
-				func(aiming: bool) -> void: rig.set_bat_grip(weapon if aiming else null))
+			controller.weapon_equipped_changed.connect(func(equipped: bool) -> void:
+				if equipped:
+					Loadout.apply_support_grip(rig, weapon, grip_profile, &"bat")
+				else:
+					rig.set_bat_grip(null))
 	return true
 
 func set_difficulty(aim_error_scale: float, interval_scale: float) -> void:
@@ -100,7 +105,7 @@ func _physics_process(delta: float) -> void:
 func _on_melee_attack(direction: Vector3, impact_style: int) -> void:
 	var hits := Combat.melee_targets(self, direction, impact_style, 1)
 	if is_instance_valid(target) and hits.has(target):
-		hit_player.call(hits[target], 1 if impact_style == HumanoidController3D.UNARMED else 2)
+		hit_player.call(hits[target], Combat.melee_damage(impact_style))
 
 func _on_fire(direction: Vector3) -> void:
 	var muzzle := weapon.to_global(weapon_setup.muzzle)
@@ -117,17 +122,23 @@ func _on_fire(direction: Vector3) -> void:
 	if hits > 0:
 		hit_player.call(direction, hits)
 
-func take_hit(direction: Vector3, damage: int) -> void:
+func _on_impact_damage(damage: int, direction: Vector3, _landing: bool) -> void:
+	take_hit(direction, damage, false)
+
+func take_hit(direction: Vector3, damage: int, apply_impulse := true) -> void:
 	if health <= 0 or damage <= 0:
 		return
 	health = maxi(0, health - damage)
 	blood.splatter(direction)
-	controller.apply_knockback(direction, minf(3.0 + damage, 7.0))
+	if apply_impulse:
+		controller.apply_knockback(direction, minf(3.0 + damage, 7.0))
 	if health > 0:
 		controller.play_reaction(&"damage0")
 		return
 	# Keep the capsule on the floor, but let living actors and attacks pass through.
 	collision_layer = 0
 	collision_mask = 1
+	if is_instance_valid(target):
+		add_collision_exception_with(target)
 	var timeout := maxf(controller.play_defeat() + 0.4, 1.0)
 	get_tree().create_timer(timeout, false).timeout.connect(queue_free)

@@ -36,8 +36,11 @@ func load_model(scene: PackedScene, positive_z: bool) -> bool:
 	return true
 
 func set_bat_grip(weapon: Node3D) -> void:
+	set_support_grip(weapon, Vector3(0, -0.06, 0), Vector3.UP)
+
+func set_support_grip(weapon: Node3D, point: Vector3, axis: Vector3, wrist: Variant = null, elbow := Vector3.ZERO) -> void:
 	if weapon and not is_instance_valid(bat_grip):
 		bat_grip = BatGrip.new()
 		bat_grip.setup(get_skeleton())
 	if is_instance_valid(bat_grip):
-		bat_grip.set_bat(weapon)
+		bat_grip.set_grip(weapon, point, axis, wrist, elbow)

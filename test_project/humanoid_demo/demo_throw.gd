@@ -41,7 +41,7 @@ func _ready() -> void:
 	marker.hide()
 	add_child(marker)
 
-func _origin(actor: CharacterBody3D, direction: Vector3) -> Vector3:
+func _origin(actor: PhysicsBody3D, direction: Vector3) -> Vector3:
 	var chest := actor.global_position + Vector3.UP * 1.55
 	var hand := chest + direction * 0.60
 	var hit := _trace(actor, chest, hand)
@@ -50,11 +50,11 @@ func _origin(actor: CharacterBody3D, direction: Vector3) -> Vector3:
 func _velocity(direction: Vector3) -> Vector3:
 	return direction * SPEED + Vector3.UP * LIFT
 
-func _trace(actor: CharacterBody3D, start: Vector3, end: Vector3) -> Dictionary:
+func _trace(actor: PhysicsBody3D, start: Vector3, end: Vector3) -> Dictionary:
 	return get_world_3d().direct_space_state.intersect_ray(
 		PhysicsRayQueryParameters3D.create(start, end, 3, [actor.get_rid()]))
 
-func preview(actor: CharacterBody3D, direction: Vector3) -> void:
+func preview(actor: PhysicsBody3D, direction: Vector3) -> void:
 	var dt := 1.0 / Engine.physics_ticks_per_second
 	var gravity := actor.get_gravity()
 	var origin := _origin(actor, direction)
@@ -80,7 +80,7 @@ func clear_preview() -> void:
 	path_dots.multimesh.visible_instance_count = 0
 	marker.hide()
 
-func launch(actor: CharacterBody3D, item: Node3D, direction: Vector3, slot: int,
+func launch(actor: PhysicsBody3D, item: Node3D, direction: Vector3, slot: int,
 		explosive: bool) -> void:
 	var projectile := RigidBody3D.new()
 	projectile.collision_layer = 0
@@ -112,7 +112,7 @@ func launch(actor: CharacterBody3D, item: Node3D, direction: Vector3, slot: int,
 	get_tree().create_timer(1.55 if explosive else 20.0, false, true).timeout.connect(
 		_expire.bind(weakref(projectile), explosive))
 
-func nearest_item(actor: CharacterBody3D) -> RigidBody3D:
+func nearest_item(actor: PhysicsBody3D) -> RigidBody3D:
 	var nearest: RigidBody3D
 	var distance := 1.5
 	for node in get_children():

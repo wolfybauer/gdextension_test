@@ -1,4 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://boqhaf1m18stf"]
+
+[ext_resource type="PackedScene" uid="uid://fbss706prwbf" path="res://humanoid_demo/grenade.glb" id="1_mshy6"]
 
 [sub_resource type="StandardMaterial3D" id="Material"]
 albedo_color = Color(0.29, 0.34, 0.19, 1)
@@ -14,11 +16,15 @@ rings = 5
 [sub_resource type="BoxMesh" id="Cap"]
 size = Vector3(0.085, 0.045, 0.075)
 
-[node name="Grenade" type="Node3D"]
+[node name="Grenade" type="Node3D" unique_id=1927734952]
 
-[node name="Body" type="MeshInstance3D" parent="."]
+[node name="Body" type="MeshInstance3D" parent="." unique_id=378853277]
+visible = false
 mesh = SubResource("Body")
 
-[node name="Cap" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.105, 0)
+[node name="Cap" type="MeshInstance3D" parent="." unique_id=1788093404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.105, 0)
+visible = false
 mesh = SubResource("Cap")
+
+[node name="grenade" parent="." unique_id=1046563856 instance=ExtResource("1_mshy6")]

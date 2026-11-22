@@ -34,8 +34,14 @@ script = ExtResource("1")
 
 [node name="Enemies" type="Node3D" parent="." unique_id=325732888]
 
-[node name="Player" type="CharacterBody3D" parent="." unique_id=1199416492]
+[node name="Player" type="RigidCharacterBody3D" parent="." unique_id=1199416492]
+impact_energy_threshold = 8.0
+safe_landing_speed = 8.0
+acceleration_magnitude = 28.0
+platform_move_with = false
 collision_mask = 3
+mass = 4.0
+can_sleep = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=886321347]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -46,14 +52,15 @@ model_scene = ExtResource("3")
 faces_positive_z = true
 
 [node name="Controller" type="HumanoidController3D" parent="Player" unique_id=115764677]
+fall_animation_delay = 0.25
 
 [node name="BloodController" parent="Player" unique_id=1662816989 instance=ExtResource("4")]
 
 [node name="Camera3D" type="Camera3D" parent="Player" unique_id=1578325887]
-transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 6.2, 5)
+transform = Transform3D(0.70710677, -0.35355338, 0.61237246, 0, 0.8660254, 0.50000006, -0.70710677, -0.35355338, 0.61237246, 20, 16.6, 20)
 projection = 1
 current = true
-size = 6.0
+size = 5.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2046274610]
 transform = Transform3D(-0.64278764, -0.6117903, 0.46101707, 0, 0.60181504, 0.79863554, -0.76604444, 0.51335305, -0.38683927, 0, 0, 0)
@@ -72,3 +79,7 @@ shape = SubResource("FloorShape")
 offset_left = 16.0
 offset_top = 16.0
 text = "1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat"
+
+[node name="Health" type="Label" parent="." unique_id=1532907771]
+offset_left = 16.0
+offset_top = 62.0

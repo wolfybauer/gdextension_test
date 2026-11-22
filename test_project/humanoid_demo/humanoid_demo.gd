@@ -1,17 +1,15 @@
 extends Node3D
 
-const MODELS := [
-	{"scene": preload("psx_characters/extras/male/Character_Sheriff_N.fbx"), "name": "Sheriff", "positive_z": true},
-	{"scene": preload("generic_guy.glb"), "name": "Generic", "positive_z": true},
-	{"scene": preload("skullguy1.glb"), "name": "Skullguy", "positive_z": false},
-]
 const ENEMY_SCENE = preload("enemies/demo_enemy.tscn")
 const BULLET_TRACER = preload("bullet_tracer.tscn")
 const MAX_ENEMIES := 8
 const Combat = preload("demo_combat.gd")
 const Loadout = preload("demo_loadout.gd")
+const MODELS = Loadout.MODELS
 const Throw = preload("demo_throw.gd")
 const Interactions = preload("demo_interactions.gd")
+const Yard = preload("demo_yard.gd")
+const PLAYER_MAX_HEALTH := 12
 const PSX_POOL := "res://humanoid_demo/psx_characters"
 
 @export_range(0.0, 3.0, 0.05) var enemy_aim_error_scale := 1.0:
@@ -24,22 +22,29 @@ const PSX_POOL := "res://humanoid_demo/psx_characters"
 		_update_enemy_difficulty()
 @export_range(0.0, 2.0, 0.05, "suffix:s") var player_hit_recovery := 0.4
 
-@onready var player: CharacterBody3D = $Player
+@onready var player: RigidCharacterBody3D = $Player
 @onready var rig = $Player/Humanoid
 @onready var controller: HumanoidController3D = $Player/Controller
 var model_index := 0
 var weapon_index := 0
 var weapon: Node3D
+var grip_profile: Dictionary
 var throw_preview := false
 var pickup_target: RigidBody3D
 var throws: Throw
 var interactions: Interactions
 var appearance_rng := RandomNumberGenerator.new()
 var enemy_models: Array[String] = []
+var yard: Yard
+var player_health := PLAYER_MAX_HEALTH
+var last_damage := ""
 
 func _ready() -> void:
 	controller.configure(player, rig)
-	controller.aiming_changed.connect(_update_bat_grip)
+	player.impact_damage.connect(_on_player_impact)
+	yard = Yard.new()
+	add_child(yard)
+	controller.weapon_equipped_changed.connect(_update_weapon_grip)
 	controller.fire.connect(_fire_weapon)
 	controller.melee_attack.connect(_melee_attack)
 	controller.item_released.connect(_release_item)
@@ -50,13 +55,18 @@ func _ready() -> void:
 	interactions = Interactions.new()
 	add_child(interactions)
 	_select_weapon(0)
+	_update_health()
 	appearance_rng.randomize()
 	_collect_models(PSX_POOL)
 	for pos in [Vector3(-4.5, 0, -3), Vector3(4.5, 0, -3), Vector3(0, 0, -5.5)]:
 		_spawn_enemy(pos)
 
-func _update_bat_grip(aiming: bool) -> void:
-	rig.set_bat_grip(weapon if aiming and not controller.is_throwing() and Loadout.WEAPONS[weapon_index].stance == &"bat" else null)
+func _update_weapon_grip(equipped: bool) -> void:
+	var stance: StringName = Loadout.WEAPONS[weapon_index].stance
+	if equipped and not controller.is_throwing() and (stance == &"bat" or controller.is_smashing()):
+		Loadout.apply_support_grip(rig, weapon, grip_profile, stance)
+	else:
+		rig.set_bat_grip(null)
 
 func _select_weapon(index: int) -> void:
 	if controller.is_throwing() or (weapon and index == weapon_index):
@@ -75,13 +85,18 @@ func _equip(next_weapon: Node3D, index: int) -> void:
 	_update_controls()
 
 func _update_controls() -> void:
-	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed"]
+	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact  •  H Release hazards  •  K Grip tuner" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed"]
+
+func _update_health() -> void:
+	$Health.text = "Health %d / %d%s" % [player_health, PLAYER_MAX_HEALTH, last_damage]
 
 func _mount_weapon() -> void:
 	var positive_z: bool = MODELS[model_index].positive_z
 	if weapon:
-		Loadout.mount_weapon(rig, controller, weapon, Loadout.WEAPONS[weapon_index], positive_z)
-	_update_bat_grip(controller.is_aiming())
+		var setup: Dictionary = Loadout.WEAPONS[weapon_index]
+		grip_profile = Loadout.read_grip_profile(rig.model_scene, setup, positive_z)
+		Loadout.mount_weapon(rig, controller, weapon, setup, positive_z, grip_profile)
+	_update_weapon_grip(controller.is_weapon_equipped())
 
 func _release_item(item: Node3D, direction: Vector3) -> void:
 	var slot := weapon_index
@@ -168,9 +183,34 @@ func _update_enemy_difficulty() -> void:
 		for enemy in $Enemies.get_children():
 			enemy.set_difficulty(enemy_aim_error_scale, enemy_attack_interval_scale)
 
+func _on_player_impact(damage: int, direction: Vector3, landing: bool) -> void:
+	_damage_player(direction, damage, 0.0, "Hard landing" if landing else "Prop impact")
+
 func _hit_player(direction: Vector3, damage: int) -> void:
-	controller.react_to_hit(direction, minf(2.5 + damage * 0.5, 4.5), player_hit_recovery)
+	_damage_player(direction, damage, minf(2.5 + damage * 0.5, 4.5), "Combat hit")
+
+func _damage_player(direction: Vector3, damage: int, knockback: float, cause: String) -> void:
+	if player_health <= 0 or damage <= 0:
+		return
+	player_health = maxi(player_health - damage, 0)
+	last_damage = "  •  %s −%d" % [cause, damage]
+	_update_health()
 	$Player/BloodController.splatter(direction)
+	if player_health > 0:
+		controller.react_to_hit(direction, knockback, player_hit_recovery)
+	else:
+		throw_preview = false
+		var duration := controller.play_defeat()
+		get_tree().create_timer(maxf(duration, 1.0), false).timeout.connect(_respawn)
+
+func _respawn() -> void:
+	var spawn := Transform3D(Basis.IDENTITY, Vector3(0, 0.1, 0))
+	PhysicsServer3D.body_set_state(player.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, spawn)
+	player.global_transform = spawn
+	player.linear_velocity = Vector3.ZERO
+	player_health = PLAYER_MAX_HEALTH
+	last_damage = ""
+	_update_health()
 
 func _hit_target(hit: Dictionary) -> Node:
 	var enemy := hit.get("collider") as Node
@@ -180,20 +220,27 @@ func _melee_attack(direction: Vector3, style: int) -> void:
 	var hits := Combat.melee_targets(player, direction, style, 2)
 	for target in hits:
 		if target.is_in_group("demo_enemies"):
-			target.take_hit(hits[target], 1 if style == HumanoidController3D.UNARMED else 2)
+			target.take_hit(hits[target], Combat.melee_damage(style))
 
 func _read_input() -> void:
+	var right: Vector3 = $Player/Camera3D.global_basis.x
+	var ground_right := Vector2(right.x, right.z).normalized()
+	var ground_down := Vector2(-ground_right.y, ground_right.x)
+	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var aim := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	controller.set_input(
-		Input.get_vector("move_left", "move_right", "move_up", "move_down"),
-		Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down"),
+		ground_right * move.x + ground_down * move.y,
+		ground_right * aim.x + ground_down * aim.y,
 		Input.is_physical_key_pressed(KEY_SPACE) and not throw_preview)
 
 func _physics_process(delta: float) -> void:
+	if player_health <= 0:
+		throws.clear_preview()
+		controller.step(delta, false)
+		return
 	_read_input()
-	var was_throwing := controller.is_throwing()
 	controller.step(delta)
-	if was_throwing and not controller.is_throwing():
-		_update_bat_grip(controller.is_aiming())
+	_update_weapon_grip(controller.is_weapon_equipped())
 	if throw_preview and weapon:
 		throws.preview(player, controller.get_attack_direction())
 	else:
@@ -201,6 +248,14 @@ func _physics_process(delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or event.echo:
+		return
+	if event.pressed and event.physical_keycode == KEY_K:
+		get_tree().change_scene_to_file("res://humanoid_demo/grip_tuner.tscn")
+		return
+	if event.pressed and event.physical_keycode == KEY_H:
+		yard.release_hazards()
+		return
+	if player_health <= 0:
 		return
 	if event.physical_keycode == KEY_G:
 		if not event.pressed and throw_preview and weapon:

@@ -43,7 +43,7 @@ func _make_prop(action: StringName, pos: Vector3, size: Vector3, color: Color) -
 	add_child(prop)
 	props[action] = prop
 
-func interact(actor: CharacterBody3D, controller: HumanoidController3D) -> void:
+func interact(actor: PhysicsBody3D, controller: HumanoidController3D) -> void:
 	var nearest := &""
 	var distance := 1.45
 	for action in props:
@@ -57,7 +57,7 @@ func interact(actor: CharacterBody3D, controller: HumanoidController3D) -> void:
 		if controller.interact(nearest, prop.global_position - actor.global_position):
 			selected = prop
 
-func contact(clip: StringName, actor: CharacterBody3D) -> void:
+func contact(clip: StringName, actor: PhysicsBody3D) -> void:
 	if not is_instance_valid(selected):
 		return
 	match clip:

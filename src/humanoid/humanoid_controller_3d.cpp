@@ -1,5 +1,6 @@
 #include "humanoid/humanoid_controller_3d.hpp"
 #include "humanoid/humanoid_rig_3d.hpp"
+#include "rigid_character_body_3d.hpp"
 
 #include "godot_cpp/classes/animation_player.hpp"
 #include "godot_cpp/classes/character_body3d.hpp"
@@ -15,6 +16,7 @@ constexpr float HIT_REACTION_SPEED = 1.75f;
 constexpr float THROW_RELEASE_TIME = 0.80f;
 constexpr float THROW_SPEED = 1.65f;
 constexpr float AIM_DISTANCE = 3.0f;
+constexpr float SMASH_IMPACT_TIME = 0.52f;
 constexpr float BAT_IMPACT_TIME = 0.32f / 1.2f;
 
 struct AimProfile {
@@ -51,15 +53,22 @@ float facing_yaw(const Vector3 &facing) {
 
 } // namespace
 
-void HumanoidController3D::configure(CharacterBody3D *new_body, HumanoidRig3D *new_rig) {
+void HumanoidController3D::configure(PhysicsBody3D *new_body, HumanoidRig3D *new_rig) {
     const Callable finished = callable_mp(this, &HumanoidController3D::on_torso_finished);
     if (rig && rig->is_connected("torso_animation_finished", finished)) {
         rig->disconnect("torso_animation_finished", finished);
     }
-    body = new_body;
+    character_body = Object::cast_to<CharacterBody3D>(new_body);
+    rigid_body = Object::cast_to<RigidCharacterBody3D>(new_body);
+    body = character_body || rigid_body ? new_body : nullptr;
+    ERR_FAIL_COND_MSG(new_body && !body, "HumanoidController3D requires CharacterBody3D or RigidCharacterBody3D.");
     rig = new_rig;
     knockback_velocity = Vector3();
+    rigid_knockback_left = 0.0f;
     hit_recovery_left = 0.0f;
+    airborne_time = 0.0f;
+    jumped = false;
+    jump_start_grace_left = 0.0f;
     action = Action::LOCOMOTION;
     impact_pending = false;
     if (rig) {
@@ -98,7 +107,7 @@ void HumanoidController3D::set_input(const Vector2 &new_move, const Vector2 &new
     aiming = next_aiming;
     update_weapon_mount();
     if (!aiming) {
-        if (action == Action::BAT_SWING || action == Action::RELOAD) {
+        if (action == Action::RELOAD) {
             cancel_action();
         }
         recoil_left = 0.0f;
@@ -120,30 +129,25 @@ void HumanoidController3D::step(double seconds, bool animate) {
         update_impact(rig->get_torso_player());
         update_interaction(delta);
     }
-    const bool bat_swing = action == Action::BAT_SWING;
-    const bool locked = bat_swing || action == Action::THROW || action == Action::INTERACT;
-    const Vector2 movement = animate && !locked ? move : Vector2();
-    const bool committed_swing = locked || action == Action::MELEE;
+    const Vector2 movement = animate && action != Action::INTERACT ? move : Vector2();
+    const bool committed_swing = action == Action::BAT_SWING || action == Action::THROW ||
+            action == Action::MELEE || action == Action::INTERACT;
     const Vector2 facing = committed_swing ? Vector2(swing_direction.x, swing_direction.z) :
             (aiming ? aim : movement);
     const float weight = 1.0f - Math::pow(0.85f, delta * 60.0f);
 
-    Vector3 velocity = body->get_velocity();
-    velocity.x = Math::lerp(velocity.x, movement.x * move_speed / 1.5f, weight);
-    velocity.z = Math::lerp(velocity.z, movement.y * move_speed, weight);
-    if (!knockback_velocity.is_zero_approx()) {
-        velocity.x = knockback_velocity.x;
-        velocity.z = knockback_velocity.z;
-    }
-    if (!body->is_on_floor()) {
-        velocity += body->get_gravity() * delta;
-    }
-    body->set_velocity(velocity);
-    body->move_and_slide();
-    if (!knockback_velocity.is_zero_approx()) {
-        const Vector3 resolved_velocity = body->get_velocity();
-        knockback_velocity = Vector3(resolved_velocity.x, 0, resolved_velocity.z)
-                .move_toward(Vector3(), 18.0f * delta);
+    move_body(aiming ? movement * aim_move_speed_multiplier : movement, weight, delta);
+    jump_start_grace_left = MAX(0.0f, jump_start_grace_left - delta);
+    if (is_on_floor()) {
+        airborne_time = 0.0f;
+        if (jumped) {
+            // Rigid-body contacts can still report floor on the first upward tick.
+            const float upward_speed = rigid_body ? rigid_body->get_linear_velocity().y : character_body->get_velocity().y;
+            jumped = jump_start_grace_left > 0.0f || upward_speed > 0.1f;
+        }
+    } else {
+        airborne_time += delta;
+        jump_start_grace_left = 0.0f;
     }
     if (!animate) {
         return;
@@ -157,7 +161,46 @@ void HumanoidController3D::step(double seconds, bool animate) {
     update_backpedal_correction(delta);
     update_aim();
     recoil_left = MAX(recoil_left - delta, 0.0f);
-    update_animation(locked);
+    update_animation();
+}
+
+bool HumanoidController3D::is_on_floor() const {
+    return rigid_body ? rigid_body->is_on_floor() : character_body && character_body->is_on_floor();
+}
+
+void HumanoidController3D::move_body(const Vector2 &movement, float weight, float delta) {
+    if (rigid_body) {
+        const bool recovering = rigid_knockback_left > 0.0f;
+        rigid_knockback_left = MAX(rigid_knockback_left - delta, 0.0f);
+        const Vector3 target(movement.x * move_speed, 0.0f, movement.y * move_speed);
+        rigid_body->set_target_velocity(recovering ? Vector3() : target);
+        rigid_body->move_and_slide();
+        if (!recovering && target.is_zero_approx()) {
+            const Vector3 velocity = rigid_body->get_linear_velocity();
+            const Vector3 horizontal(velocity.x, 0.0f, velocity.z);
+            // The rigid motor coasts at zero target speed. Brake for the fixed-camera controls.
+            rigid_body->apply_central_force(-horizontal * rigid_body->get_mass() * weight / delta);
+        }
+        return;
+    }
+
+    Vector3 velocity = character_body->get_velocity();
+    velocity.x = Math::lerp(velocity.x, movement.x * move_speed / 1.5f, weight);
+    velocity.z = Math::lerp(velocity.z, movement.y * move_speed, weight);
+    if (!knockback_velocity.is_zero_approx()) {
+        velocity.x = knockback_velocity.x;
+        velocity.z = knockback_velocity.z;
+    }
+    if (!character_body->is_on_floor()) {
+        velocity += character_body->get_gravity() * delta;
+    }
+    character_body->set_velocity(velocity);
+    character_body->move_and_slide();
+    if (!knockback_velocity.is_zero_approx()) {
+        const Vector3 resolved_velocity = character_body->get_velocity();
+        knockback_velocity = Vector3(resolved_velocity.x, 0, resolved_velocity.z)
+                .move_toward(Vector3(), 18.0f * delta);
+    }
 }
 
 void HumanoidController3D::set_aim_error(float degrees) {
@@ -179,7 +222,12 @@ bool HumanoidController3D::react_to_hit(const Vector3 &direction, float knockbac
 void HumanoidController3D::apply_knockback(const Vector3 &direction, float speed) {
     const Vector3 horizontal(direction.x, 0, direction.z);
     if (speed > 0.0f && !horizontal.is_zero_approx()) {
-        knockback_velocity = horizontal.normalized() * speed;
+        if (rigid_body) {
+            rigid_body->apply_central_impulse(horizontal.normalized() * speed * rigid_body->get_mass());
+            rigid_knockback_left = 0.22f;
+        } else {
+            knockback_velocity = horizontal.normalized() * speed;
+        }
     }
 }
 
@@ -203,7 +251,7 @@ bool HumanoidController3D::attack() {
         return true;
     }
 
-    const WeaponStyle attack_style = active_style();
+    const WeaponStyle attack_style = get_weapon() ? style : UNARMED;
     if (attack_style == BAT) {
         if (!play_action(Action::BAT_SWING, "swing_bat", 0.08)) {
             return false;
@@ -211,12 +259,24 @@ bool HumanoidController3D::attack() {
         Vector3 rotation = rig->get_rotation();
         rotation.y = facing_yaw(direction);
         rig->set_rotation(rotation);
-        rig->play_legs("swing_bat", 0.08, 1.0);
     } else {
         static const char *punches[] = {"punch0", "punch1", "punch2", "punch_right_jab"};
         static const char *knife_attacks[] = {"melee1", "melee2", "punch_right_jab"};
-        const char *clip = attack_style == KNIFE ? knife_attacks[UtilityFunctions::randi_range(0, 2)] :
-                punches[UtilityFunctions::randi_range(0, 3)];
+        const char *clip;
+        switch (attack_style) {
+            case LONG_GUN:
+                clip = "smash_twohand";
+                break;
+            case PISTOL:
+                clip = "punch_right_jab";
+                break;
+            case KNIFE:
+                clip = knife_attacks[UtilityFunctions::randi_range(0, 2)];
+                break;
+            default:
+                clip = punches[UtilityFunctions::randi_range(0, 3)];
+                break;
+        }
         if (!play_action(Action::MELEE, clip, 0.08)) {
             return false;
         }
@@ -224,6 +284,7 @@ bool HumanoidController3D::attack() {
     swing_direction = direction;
     impact_style = attack_style;
     impact_pending = true;
+    update_weapon_mount();
     return true;
 }
 
@@ -242,7 +303,6 @@ bool HumanoidController3D::throw_item(Node3D *item) {
         rig->mount_weapon(item, true);
     }
     update_weapon_mount();
-    rig->play_legs("throw", 0.08, THROW_SPEED);
     return true;
 }
 
@@ -284,8 +344,14 @@ bool HumanoidController3D::interact(const StringName &clip, const Vector3 &direc
 }
 
 void HumanoidController3D::update_weapon_mount() {
+    const bool equipped = get_weapon() && (aiming || action == Action::THROW ||
+            action == Action::BAT_SWING || action == Action::MELEE || style == UNARMED);
     if (rig) {
-        rig->set_weapon_aiming(aiming || action == Action::THROW || (style == UNARMED && get_weapon()));
+        rig->set_weapon_aiming(equipped);
+    }
+    if (weapon_equipped != equipped) {
+        weapon_equipped = equipped;
+        emit_signal("weapon_equipped_changed", equipped);
     }
 }
 
@@ -299,6 +365,7 @@ void HumanoidController3D::update_interaction(float delta) {
             weapon_id = ObjectID();
             style = UNARMED;
             rig->configure_aim_weapon(nullptr, Transform3D(), Transform3D());
+            update_weapon_mount();
         }
         if (item) {
             emit_signal("item_released", item, swing_direction);
@@ -323,11 +390,23 @@ void HumanoidController3D::reload() {
 }
 
 void HumanoidController3D::jump() {
-    if (body && body->is_on_floor()) {
-        Vector3 velocity = body->get_velocity();
-        velocity.y = 4.245f;
-        body->set_velocity(velocity);
+    if (!is_on_floor()) {
+        return;
     }
+    constexpr float JUMP_SPEED = 4.245f;
+    if (rigid_body) {
+        const float upward_speed = rigid_body->get_linear_velocity().y;
+        if (upward_speed > 0.1f) {
+            return;
+        }
+        rigid_body->apply_central_impulse(Vector3(0, JUMP_SPEED - upward_speed, 0) * rigid_body->get_mass());
+    } else {
+        Vector3 velocity = character_body->get_velocity();
+        velocity.y = JUMP_SPEED;
+        character_body->set_velocity(velocity);
+    }
+    jumped = true;
+    jump_start_grace_left = 0.05f;
 }
 
 bool HumanoidController3D::play_reaction(const StringName &clip) {
@@ -380,8 +459,8 @@ Vector3 HumanoidController3D::get_attack_direction() const {
 
 void HumanoidController3D::update_aim() {
     const AimProfile &profile = AIM_PROFILES[active_style()];
-    if (action == Action::THROW || action == Action::INTERACT || (!aiming && recoil_left <= 0.0f) || !profile.use_chest ||
-            (action == Action::MELEE && action_clip == StringName("punch_right_jab"))) {
+    if (action == Action::THROW || action == Action::INTERACT || action == Action::MELEE ||
+            action == Action::BAT_SWING || (!aiming && recoil_left <= 0.0f) || !profile.use_chest) {
         rig->clear_aim();
         return;
     }
@@ -396,7 +475,7 @@ void HumanoidController3D::update_aim() {
 }
 
 void HumanoidController3D::update_backpedal_correction(float delta) {
-    if (!has_firearm() || !body->is_on_floor() || move.dot(aim) > -0.701f) {
+    if (!has_firearm() || !is_on_floor() || move.dot(aim) > -0.701f) {
         aim_correction = Vector2();
         return;
     }
@@ -415,19 +494,29 @@ void HumanoidController3D::update_backpedal_correction(float delta) {
     aim_correction.y = Math::clamp(aim_correction.y - barrel.y * AIM_DISTANCE * weight, -0.55f, 0.55f);
 }
 
-void HumanoidController3D::update_animation(bool bat_swing) {
-    if (bat_swing) {
+void HumanoidController3D::update_animation() {
+    if (action == Action::INTERACT) {
         return;
     }
+    const bool swinging_bat = action == Action::BAT_SWING;
+    const bool throwing = action == Action::THROW;
+    const bool smashing = is_smashing();
     const AimProfile &profile = AIM_PROFILES[active_style()];
     StringName torso_clip = move.is_zero_approx() ? "idle_unarmed" : "fwd_unarmed";
-    if (!body->is_on_floor()) {
+    if (jumped || (airborne_time > 0.0f && airborne_time >= fall_animation_delay)) {
         torso_clip = "fall";
         play_loop(rig->get_legs_player(), torso_clip);
-    } else if (aiming) {
-        const Vector2 forward = aim.normalized();
+    } else if ((swinging_bat || throwing || smashing) && move.is_zero_approx()) {
+        AnimationPlayer *legs = rig->get_legs_player();
+        if (legs->get_current_animation() != qualified(action_clip) &&
+                rig->play_legs(action_clip, 0.08, throwing ? THROW_SPEED : 1.0)) {
+            legs->seek(rig->get_torso_player()->get_current_animation_position());
+        }
+    } else if (aiming || swinging_bat || throwing || smashing) {
+        const Vector2 forward = swinging_bat || throwing || smashing ? Vector2(swing_direction.x, swing_direction.z) : aim.normalized();
         const Vector2 right(-forward.y, forward.x);
-        const StringName legs_stance = active_style() == BAT && !move.is_zero_approx() ? "twohand" : profile.stance;
+        const StringName legs_stance = throwing ? "unarmed" :
+                (swinging_bat || smashing || (active_style() == BAT && !move.is_zero_approx()) ? "twohand" : profile.stance);
         rig->play_locomotion(Vector2(move.dot(right), move.dot(forward)), legs_stance, 0.15);
     } else {
         play_loop(rig->get_legs_player(), torso_clip);
@@ -447,7 +536,8 @@ void HumanoidController3D::update_impact(AnimationPlayer *torso) {
     if (!impact_pending || (action != Action::MELEE && action != Action::BAT_SWING)) {
         return;
     }
-    const float impact_time = action == Action::BAT_SWING ? BAT_IMPACT_TIME : 0.18f;
+    const float impact_time = action == Action::BAT_SWING ? BAT_IMPACT_TIME :
+            (impact_style == LONG_GUN ? SMASH_IMPACT_TIME : 0.18f);
     if (torso->get_current_animation_position() >= impact_time) {
         impact_pending = false;
         emit_signal("melee_attack", swing_direction, impact_style);
@@ -487,6 +577,7 @@ void HumanoidController3D::on_torso_finished(const StringName &clip) {
     } else {
         action = Action::LOCOMOTION;
         impact_pending = false;
+        update_weapon_mount();
     }
 }
 
@@ -500,6 +591,14 @@ HumanoidController3D::WeaponStyle HumanoidController3D::active_style() const {
 
 Node3D *HumanoidController3D::get_weapon() const {
     return weapon_id.is_valid() ? Object::cast_to<Node3D>(ObjectDB::get_instance(weapon_id)) : nullptr;
+}
+
+void HumanoidController3D::set_fall_animation_delay(float seconds) {
+    fall_animation_delay = MAX(0.0f, seconds);
+}
+
+void HumanoidController3D::set_aim_move_speed_multiplier(float multiplier) {
+    aim_move_speed_multiplier = Math::clamp(multiplier, 0.0f, 1.0f);
 }
 
 void HumanoidController3D::set_move_speed(float speed) {
@@ -517,6 +616,7 @@ void HumanoidController3D::_bind_methods() {
             &HumanoidController3D::react_to_hit);
     ClassDB::bind_method(D_METHOD("apply_knockback", "direction", "speed"), &HumanoidController3D::apply_knockback);
     ClassDB::bind_method(D_METHOD("throw_item", "item"), &HumanoidController3D::throw_item);
+    ClassDB::bind_method(D_METHOD("is_smashing"), &HumanoidController3D::is_smashing);
     ClassDB::bind_method(D_METHOD("is_throwing"), &HumanoidController3D::is_throwing);
     ClassDB::bind_method(D_METHOD("interact", "clip", "direction"), &HumanoidController3D::interact);
     ClassDB::bind_method(D_METHOD("attack"), &HumanoidController3D::attack);
@@ -525,10 +625,20 @@ void HumanoidController3D::_bind_methods() {
     ClassDB::bind_method(D_METHOD("play_reaction", "clip"), &HumanoidController3D::play_reaction);
     ClassDB::bind_method(D_METHOD("play_defeat"), &HumanoidController3D::play_defeat);
     ClassDB::bind_method(D_METHOD("get_attack_direction"), &HumanoidController3D::get_attack_direction);
+    ClassDB::bind_method(D_METHOD("is_weapon_equipped"), &HumanoidController3D::is_weapon_equipped);
     ClassDB::bind_method(D_METHOD("is_aiming"), &HumanoidController3D::is_aiming);
     ClassDB::bind_method(D_METHOD("set_move_speed", "speed"), &HumanoidController3D::set_move_speed);
     ClassDB::bind_method(D_METHOD("get_move_speed"), &HumanoidController3D::get_move_speed);
+    ClassDB::bind_method(D_METHOD("set_fall_animation_delay", "seconds"), &HumanoidController3D::set_fall_animation_delay);
+    ClassDB::bind_method(D_METHOD("get_fall_animation_delay"), &HumanoidController3D::get_fall_animation_delay);
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fall_animation_delay", PROPERTY_HINT_RANGE, "0,1,0.01,or_greater,suffix:s"),
+            "set_fall_animation_delay", "get_fall_animation_delay");
+    ClassDB::bind_method(D_METHOD("set_aim_move_speed_multiplier", "multiplier"), &HumanoidController3D::set_aim_move_speed_multiplier);
+    ClassDB::bind_method(D_METHOD("get_aim_move_speed_multiplier"), &HumanoidController3D::get_aim_move_speed_multiplier);
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "aim_move_speed_multiplier", PROPERTY_HINT_RANGE, "0,1,0.01"),
+            "set_aim_move_speed_multiplier", "get_aim_move_speed_multiplier");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "move_speed"), "set_move_speed", "get_move_speed");
+    ADD_SIGNAL(MethodInfo("weapon_equipped_changed", PropertyInfo(Variant::BOOL, "equipped")));
     ADD_SIGNAL(MethodInfo("aiming_changed", PropertyInfo(Variant::BOOL, "aiming")));
     ADD_SIGNAL(MethodInfo("item_released", PropertyInfo(Variant::OBJECT, "item", PROPERTY_HINT_NODE_TYPE, "Node3D"),
             PropertyInfo(Variant::VECTOR3, "direction")));

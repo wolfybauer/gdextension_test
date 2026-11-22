@@ -12,20 +12,85 @@ using namespace godot;
 VARIANT_ENUM_CAST(RigidCharacterBody3D::PlatformOnExit);
 
 
+void RigidCharacterBody3D::_integrate_forces(PhysicsDirectBodyState3D *state) {
+    if (impact_energy_threshold <= 0.0f && safe_landing_speed <= 0.0f) {
+        return;
+    }
+    constexpr float MIN_OBJECT_SPEED = 1.5f;
+    constexpr float JOULES_PER_DAMAGE = 12.0f;
+    constexpr float DAMAGE_COOLDOWN = 0.35f;
+    const Vector3 up = up_direction.normalized();
+    const Basis basis = state->get_transform().basis;
+    const float fall_speed = MAX(0.0f, -state->get_linear_velocity().dot(up));
+    damage_cooldown = MAX(0.0f, damage_cooldown - float(state->get_step()));
+    bool supported = false;
+    float severity = 0.0f;
+    Vector3 direction;
+    bool landing = false;
+
+    for (int i = 0; i < state->get_contact_count(); ++i) {
+        const Vector3 normal = basis.xform(state->get_contact_local_normal(i)).normalized();
+        const Vector3 object_velocity = state->get_contact_collider_velocity_at_position(i);
+        if (normal.dot(up) >= Math::cos(floor_max_angle_rad)) {
+            supported = true;
+            const float approach = MAX(fall_speed, previous_fall_speed) + object_velocity.dot(up);
+            if (!had_support && safe_landing_speed > 0.0f && approach > safe_landing_speed) {
+                const float excess = (approach * approach - safe_landing_speed * safe_landing_speed) * 0.5f;
+                const float landing_severity = 1.0f + excess / JOULES_PER_DAMAGE;
+                if (landing_severity > severity) {
+                    severity = landing_severity;
+                    direction = -up;
+                    landing = true;
+                }
+            }
+        }
+        if (impact_energy_threshold <= 0.0f) {
+            continue;
+        }
+        Object *collider = state->get_contact_collider_object(i);
+        auto *prop = Object::cast_to<RigidBody3D>(collider);
+        if (!prop || prop->is_freeze_enabled() || Object::cast_to<RigidCharacterBody3D>(collider)) {
+            continue;
+        }
+        const float incoming = object_velocity.dot(normal);
+        if (incoming < MIN_OBJECT_SPEED) {
+            continue;
+        }
+        const float closing = MAX(0.0f,
+                (object_velocity - state->get_contact_local_velocity_at_position(i)).dot(normal));
+        const float effective_mass = get_mass() * prop->get_mass() / (get_mass() + prop->get_mass());
+        const float energy = 0.5f * effective_mass * closing * closing;
+        if (energy >= impact_energy_threshold) {
+            const float impact_severity = 1.0f + (energy - impact_energy_threshold) / JOULES_PER_DAMAGE;
+            if (impact_severity > severity) {
+                severity = impact_severity;
+                direction = normal;
+                landing = false;
+            }
+        }
+    }
+    previous_fall_speed = supported ? 0.0f : fall_speed;
+    had_support = supported;
+    if (severity >= 1.0f && damage_cooldown <= 0.0f) {
+        damage_cooldown = DAMAGE_COOLDOWN;
+        const int damage = int(Math::clamp(severity, 1.0f, 12.0f));
+        call_deferred("emit_signal", StringName("impact_damage"), damage, direction, landing);
+    }
+}
+
 void RigidCharacterBody3D::_detect_ceiling_floor_wall() {
     PhysicsServer3D * serv = PhysicsServer3D::get_singleton();
-    if(!serv) {
-        // TODO error + abort
+    if (!serv) {
+        return;
     }
     _floor_normal = Vector3(0,0,0);
     _state = serv->body_get_direct_state(get_rid());
-    if(!_state) {
-        // TODO error + abort
-    }
-
     _is_on_floor = false;
     _is_on_ceiling = false;
     _is_on_wall = false;
+    if (!_state) {
+        return;
+    }
 
     AnimatableBody3D * moving_platform = nullptr;
     AnimatableBody3D * ab;
@@ -158,6 +223,17 @@ Vector3 RigidCharacterBody3D::modify_move_force(Vector3 force) {
 
 
 void RigidCharacterBody3D::_bind_methods() {
+    ClassDB::bind_method(D_METHOD("set_impact_energy_threshold", "joules"), &RigidCharacterBody3D::set_impact_energy_threshold);
+    ClassDB::bind_method(D_METHOD("get_impact_energy_threshold"), &RigidCharacterBody3D::get_impact_energy_threshold);
+    ClassDB::bind_method(D_METHOD("set_safe_landing_speed", "speed"), &RigidCharacterBody3D::set_safe_landing_speed);
+    ClassDB::bind_method(D_METHOD("get_safe_landing_speed"), &RigidCharacterBody3D::get_safe_landing_speed);
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "impact_energy_threshold", PROPERTY_HINT_RANGE, "0,100,0.1,or_greater,suffix:J"),
+            "set_impact_energy_threshold", "get_impact_energy_threshold");
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "safe_landing_speed", PROPERTY_HINT_RANGE, "0,30,0.1,or_greater,suffix:m/s"),
+            "set_safe_landing_speed", "get_safe_landing_speed");
+    ADD_SIGNAL(MethodInfo("impact_damage", PropertyInfo(Variant::INT, "damage"),
+            PropertyInfo(Variant::VECTOR3, "direction"), PropertyInfo(Variant::BOOL, "landing")));
+
 	// methods
 	ClassDB::bind_method(D_METHOD("move_and_slide"), &RigidCharacterBody3D::move_and_slide);
     // ClassDB::bind_method(D_METHOD("_modify_move_force", "force"), &RigidCharacterBody3D::modify_move_force);

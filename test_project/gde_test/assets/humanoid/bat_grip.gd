@@ -20,6 +20,10 @@ var elbows: Array[int] = []
 var arm_reach: Array[float] = []
 var hands: Array[int] = []
 var support_palm_offset := Vector3.ZERO
+var support_point := Vector3.ZERO
+var grip_axis := Vector3.UP
+var wrist_basis: Variant
+var elbow_offset := Vector3.ZERO
 
 func setup(skeleton: Skeleton3D) -> void:
 	skeleton.add_child(self)
@@ -54,16 +58,24 @@ func setup(skeleton: Skeleton3D) -> void:
 	for hand in hands:
 		var wrist := PreserveWrist.new()
 		wrist.bone = hand
+		wrist.active = false
 		skeleton.add_child(wrist)
 		wrists.append(wrist)
-	set_bat(null)
+	set_grip(null, Vector3.ZERO, Vector3.UP)
 
-func set_bat(bat: Node3D) -> void:
-	weapon = bat
-	active = weapon != null
-	ik.active = active
-	for wrist in wrists:
-		wrist.active = active
+func set_grip(item: Node3D, point: Vector3, axis: Vector3, wrist: Variant = null, elbow := Vector3.ZERO) -> void:
+	var enabled := item != null
+	weapon = item
+	support_point = point
+	grip_axis = axis
+	wrist_basis = wrist
+	elbow_offset = elbow
+	if active == enabled:
+		return
+	active = enabled
+	ik.active = enabled
+	for wrist_modifier in wrists:
+		wrist_modifier.active = enabled
 
 func _process_modification() -> void:
 	if not is_instance_valid(weapon):
@@ -71,24 +83,28 @@ func _process_modification() -> void:
 	var skeleton := get_skeleton()
 	var hand_pose := skeleton.get_bone_global_pose(hands[0])
 	wrists[0].authored_basis = hand_pose.basis
-	var bat_pose := hand_pose * weapon.transform
+	var item_pose := hand_pose * weapon.transform
 	var support_basis := skeleton.get_bone_global_pose(hands[1]).basis.orthonormalized()
-	var palm_direction := (support_basis * support_palm_offset).normalized()
-	var across_handle := palm_direction.slide(bat_pose.basis.y.normalized()).normalized()
-	if not palm_direction.is_zero_approx() and not across_handle.is_zero_approx():
-		support_basis = Basis(Quaternion(palm_direction, across_handle)) * support_basis
+	if wrist_basis is Basis:
+		support_basis = item_pose.basis.orthonormalized() * wrist_basis
+	else:
+		var palm_direction := (support_basis * support_palm_offset).normalized()
+		var across_handle := palm_direction.slide((item_pose.basis * grip_axis).normalized()).normalized()
+		if not palm_direction.is_zero_approx() and not across_handle.is_zero_approx():
+			support_basis = Basis(Quaternion(palm_direction, across_handle)) * support_basis
 	wrists[1].authored_basis = support_basis
 	# Place the palm on the handle, leaving room between it and the lead hand.
-	var support_palm := bat_pose * Vector3(0, -0.06, 0)
+	var support_palm := item_pose * support_point
 	var spacing := support_palm - support_basis * support_palm_offset - hand_pose.origin
 	var grip_position := hand_pose.origin
 	var right := skeleton.get_bone_global_pose(shoulders[0]).origin
 	var left := skeleton.get_bone_global_pose(shoulders[1]).origin
 	# Shift both grips together into reach while retaining the authored swing rotation.
-	for pass_index in 3:
+	for pass_index in 4:
 		grip_position = left + (grip_position + spacing - left).limit_length(arm_reach[1]) - spacing
 		grip_position = right + (grip_position - right).limit_length(arm_reach[0])
 	grips[0].position = grip_position
 	grips[1].position = grip_position + spacing
 	for index in 2:
 		poles[index].position = skeleton.get_bone_global_pose(elbows[index]).origin + Vector3.DOWN * 0.2
+	poles[1].position += elbow_offset

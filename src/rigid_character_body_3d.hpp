@@ -24,6 +24,11 @@ public:
     RigidCharacterBody3D() = default;
     ~RigidCharacterBody3D() override = default;
     void _notification(int p_what);
+    void _integrate_forces(PhysicsDirectBodyState3D *state) override;
+    void set_impact_energy_threshold(float value) { impact_energy_threshold = MAX(value, 0.0f); }
+    float get_impact_energy_threshold() const { return impact_energy_threshold; }
+    void set_safe_landing_speed(float value) { safe_landing_speed = MAX(value, 0.0f); }
+    float get_safe_landing_speed() const { return safe_landing_speed; }
 
     void move_and_slide();
     virtual Vector3 modify_move_force(Vector3 force);
@@ -82,6 +87,12 @@ private:
     
     Vector3 target_velocity = Vector3(0,0,0);
     float acceleration_magnitude = 15.0f;
+
+    float impact_energy_threshold = 0.0f;
+    float safe_landing_speed = 0.0f;
+    float previous_fall_speed = 0.0f;
+    float damage_cooldown = 0.0f;
+    bool had_support = false;
 
     // internals
     Node * _initial_parent = nullptr;
