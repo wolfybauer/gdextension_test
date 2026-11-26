@@ -15,13 +15,21 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Test_Project"
-run/main_scene="uid://blkpvcwih8j7w"
+run/main_scene="uid://ct4ccemmle6io"
 config/features=PackedStringArray("4.8", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [dotnet]
 
 project/assembly_name="Test_Project"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/func_godot/plugin.cfg")
+
+[func_godot]
+
+default_map_settings="res://trenchbroom/map_settings.tres"
 
 [input]
 

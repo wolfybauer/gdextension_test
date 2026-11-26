@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDSolidClass" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="1"]
+[ext_resource type="Script" path="res://trenchbroom/entities/map_breakable.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+classname = "func_breakable"
+description = "A physics brush that fractures when damaged. Burnable brushes spread fire."
+node_class = "RigidBody3D"
+script_class = ExtResource("2")
+spawn_type = 2
+build_visuals = true
+build_occlusion = false
+collision_shape_type = 1
+collision_layer = 1
+collision_mask = 3
+class_properties = {
+"health": 75,
+"mass": 5.0,
+"start_fire": false
+}

@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://d1rg3ox5mlhjl"
+path="res://.godot/imported/mechanics_workshop.map-59827f9d2a2b87594327d56f29799bcb.tres"
+
+[deps]
+
+source_file="res://trenchbroom/maps/mechanics_workshop.map"
+dest_files=["res://.godot/imported/mechanics_workshop.map-59827f9d2a2b87594327d56f29799bcb.tres"]
+
+[params]
+

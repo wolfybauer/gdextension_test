@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDPointClass" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+classname = "info_player_start"
+description = "Player start marker."
+node_class = "Marker3D"
+node_groups = Array[String](["map_player_start"])

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrenchBroomGameConfig" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/trenchbroom/trenchbroom_game_config.gd" id="1"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd_main.tres" id="2"]
+[ext_resource type="Resource" path="res://addons/func_godot/game_config/trenchbroom/tb_brush_tag_func.tres" id="3"]
+[ext_resource type="Resource" path="res://addons/func_godot/game_config/trenchbroom/tb_brush_tag_trigger.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+game_name = "Humanoid Sandbox"
+map_formats = Array[Dictionary]([{"format": "Valve"}, {"format": "Standard"}])
+fgd_file = ExtResource("2")
+brush_tags = Array[Resource]([ExtResource("3"), ExtResource("4")])

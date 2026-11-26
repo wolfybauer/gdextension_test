@@ -9,8 +9,22 @@ const MODELS = Loadout.MODELS
 const Throw = preload("demo_throw.gd")
 const Interactions = preload("demo_interactions.gd")
 const Yard = preload("demo_yard.gd")
+const LEVEL_SCENES := [
+	"res://humanoid_demo/humanoid_demo.tscn",
+	"res://humanoid_demo/level_solstice.tscn",
+	"res://humanoid_demo/level_wicked_night.tscn",
+	"res://humanoid_demo/level_mechanics_workshop.tscn",
+]
+const MAP_CUTAWAY_SHADER = preload("res://trenchbroom/map_cutaway.gdshader")
+const MAP_CAMERA_HEIGHT := 0.95
+const MAP_CAMERA_DISTANCE := 7.0
+const MAP_CAMERA_CLEARANCE := 0.25
 const PLAYER_MAX_HEALTH := 12
 const PSX_POOL := "res://humanoid_demo/psx_characters"
+
+@export var imported_level: PackedScene
+@export var level_index := 0
+@export_range(0.0, 2.0, 0.05) var imported_ambient_energy := 0.75
 
 @export_range(0.0, 3.0, 0.05) var enemy_aim_error_scale := 1.0:
 	set(value):
@@ -41,12 +55,26 @@ var enemy_models: Array[String] = []
 var yard: Yard
 var player_health := PLAYER_MAX_HEALTH
 var last_damage := ""
+var map_camera_distance := MAP_CAMERA_DISTANCE
 
 func _ready() -> void:
 	controller.configure(player, rig)
 	player.impact_damage.connect(_on_player_impact)
-	yard = Yard.new()
-	add_child(yard)
+	if imported_level:
+		var original := $Level
+		remove_child(original)
+		original.queue_free()
+		var map := imported_level.instantiate()
+		add_child(map)
+		_setup_imported_camera()
+		_soften_map_cutaways(map)
+		var marker := get_tree().get_first_node_in_group("map_player_start") as Node3D
+		if marker:
+			spawn_transform.origin = marker.global_position - Vector3.UP * 0.5
+			_place_player_at_spawn()
+	else:
+		yard = Yard.new()
+		add_child(yard)
 	controller.weapon_equipped_changed.connect(_update_weapon_grip)
 	controller.fire.connect(_fire_weapon)
 	controller.melee_attack.connect(_melee_attack)
@@ -55,15 +83,23 @@ func _ready() -> void:
 	throws = Throw.new()
 	add_child(throws)
 	throws.exploded.connect(_blast)
-	interactions = Interactions.new()
-	add_child(interactions)
-	interactions.ignition_requested.connect(yard.ignite_crates)
+	if yard:
+		interactions = Interactions.new()
+		add_child(interactions)
+		interactions.ignition_requested.connect(yard.ignite_crates)
 	_select_weapon(0)
 	_update_health()
 	appearance_rng.randomize()
 	_collect_models(PSX_POOL)
-	for pos in [Vector3(2.0, 0.05, -5.0), Vector3(6.2, 0.05, -5.8), Vector3(10.0, 0.05, -4.5)]:
-		_spawn_enemy(pos)
+	if imported_level:
+		var markers := get_tree().get_nodes_in_group("map_enemy_start")
+		markers.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+			return a.global_position.distance_squared_to(spawn_transform.origin) < b.global_position.distance_squared_to(spawn_transform.origin))
+		for marker in markers.slice(0, 3):
+			_spawn_enemy(marker.global_position - Vector3.UP * 0.5)
+	else:
+		for pos in [Vector3(2.0, 0.05, -5.0), Vector3(6.2, 0.05, -5.8), Vector3(10.0, 0.05, -4.5)]:
+			_spawn_enemy(pos)
 
 func _update_weapon_grip(equipped: bool) -> void:
 	var stance: StringName = Loadout.WEAPONS[weapon_index].stance
@@ -89,7 +125,7 @@ func _equip(next_weapon: Node3D, index: int) -> void:
 	_update_controls()
 
 func _update_controls() -> void:
-	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact / ignite at orange switch  •  H Release hazards  •  K Grip tuner" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed"]
+	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact  •  K Grip tuner  •  F9 Change level%s" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed", "  •  H Hazards" if yard else ""]
 
 func _update_health() -> void:
 	$Health.text = "Health %d / %d%s" % [player_health, PLAYER_MAX_HEALTH, last_damage]
@@ -133,14 +169,14 @@ func _interaction_contact(clip: StringName) -> void:
 		pickup_target.queue_free()
 		pickup_target = null
 		_equip(item, slot)
-	else:
+	elif interactions:
 		interactions.contact(clip, player)
 
 func _interact() -> void:
 	var item := throws.nearest_item(player)
 	if item and controller.interact(&"pickup0", item.global_position - player.global_position):
 		pickup_target = item
-	elif not item:
+	elif not item and interactions:
 		interactions.interact(player, controller)
 
 func _fire_weapon(direction: Vector3) -> void:
@@ -214,11 +250,13 @@ func _damage_player(direction: Vector3, damage: int, knockback: float, cause: St
 		var duration := controller.play_defeat()
 		get_tree().create_timer(maxf(duration, 1.0), false).timeout.connect(_respawn)
 
-func _respawn() -> void:
-	var spawn := spawn_transform
-	PhysicsServer3D.body_set_state(player.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, spawn)
-	player.global_transform = spawn
+func _place_player_at_spawn() -> void:
+	PhysicsServer3D.body_set_state(player.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, spawn_transform)
+	player.global_transform = spawn_transform
 	player.linear_velocity = Vector3.ZERO
+
+func _respawn() -> void:
+	_place_player_at_spawn()
 	player_health = PLAYER_MAX_HEALTH
 	last_damage = ""
 	_update_health()
@@ -242,7 +280,54 @@ func _read_input() -> void:
 		ground_right * aim.x + ground_down * aim.y,
 		Input.is_physical_key_pressed(KEY_SPACE) and not throw_preview)
 
+func _setup_imported_camera() -> void:
+	var atmosphere := Environment.new()
+	atmosphere.background_mode = Environment.BG_COLOR
+	atmosphere.background_color = Color(0.075, 0.09, 0.12)
+	atmosphere.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	atmosphere.ambient_light_color = Color(0.92, 0.95, 1.0)
+	atmosphere.ambient_light_energy = imported_ambient_energy
+	camera.environment = atmosphere
+	camera.position = Vector3.UP * MAP_CAMERA_HEIGHT + camera.basis.z * map_camera_distance
+
+func _soften_map_cutaways(map: Node) -> void:
+	var copies: Dictionary[Material, ShaderMaterial] = {}
+	for child in map.find_children("*", "MeshInstance3D", true, false):
+		var mesh := child as MeshInstance3D
+		if mesh.mesh == null:
+			continue
+		for surface in mesh.mesh.get_surface_count():
+			var material := mesh.get_active_material(surface)
+			if material is ShaderMaterial and mesh.get_parent() is FadeWall3D:
+				material.set_shader_parameter("camera_cutaway", true)
+			elif material is BaseMaterial3D:
+				if not copies.has(material):
+					var copy := ShaderMaterial.new()
+					copy.shader = MAP_CUTAWAY_SHADER
+					copy.set_shader_parameter("albedo_color", material.albedo_color)
+					copy.set_shader_parameter("roughness", material.roughness)
+					copy.set_shader_parameter("use_texture", material.albedo_texture != null)
+					if material.albedo_texture:
+						copy.set_shader_parameter("albedo_texture", material.albedo_texture)
+					copies[material] = copy
+				mesh.set_surface_override_material(surface, copies[material])
+
+func _update_imported_camera(delta: float) -> void:
+	var focus := player.to_global(Vector3.UP * MAP_CAMERA_HEIGHT)
+	var axis := camera.global_basis.z.normalized()
+	var query := PhysicsRayQueryParameters3D.create(
+		focus, focus + axis * MAP_CAMERA_DISTANCE, 1, [player.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var available := MAP_CAMERA_DISTANCE
+	if not hit.is_empty():
+		available = maxf(camera.near + 0.02, focus.distance_to(hit.position) - MAP_CAMERA_CLEARANCE)
+	# Moving along the viewing axis preserves the orthographic framing and input directions.
+	map_camera_distance = minf(available, move_toward(map_camera_distance, available, 10.0 * delta))
+	camera.position = Vector3.UP * MAP_CAMERA_HEIGHT + camera.basis.z * map_camera_distance
+
 func _physics_process(delta: float) -> void:
+	if imported_level:
+		_update_imported_camera(delta)
 	var tree := get_tree()
 	FadeWall3D.check_fade_walls(tree, fade_target, camera, 5.0, 5.0, 0.25)
 	FadeFloor3D.check_fade_floors(tree, player, 2.0)
@@ -264,10 +349,13 @@ func _physics_process(delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or event.echo:
 		return
+	if event.pressed and event.physical_keycode == KEY_F9:
+		get_tree().change_scene_to_file(LEVEL_SCENES[(level_index + 1) % LEVEL_SCENES.size()])
+		return
 	if event.pressed and event.physical_keycode == KEY_K:
 		get_tree().change_scene_to_file("res://humanoid_demo/grip_tuner.tscn")
 		return
-	if event.pressed and event.physical_keycode == KEY_H:
+	if event.pressed and event.physical_keycode == KEY_H and yard:
 		yard.release_hazards()
 		return
 	if player_health <= 0:

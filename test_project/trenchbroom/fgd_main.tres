@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDFile" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_file.gd" id="1"]
+[ext_resource type="Resource" path="res://addons/func_godot/fgd/func_godot_fgd.tres" id="2"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/fade_wall.tres" id="3"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/fade_floor.tres" id="4"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_breakable.tres" id="5"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_burnable.tres" id="6"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_door.tres" id="7"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_plat.tres" id="8"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_wall.tres" id="9"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_detail_wall.tres" id="10"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/trigger_teleport.tres" id="11"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/info_teleport_destination.tres" id="12"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/info_player_start.tres" id="13"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/info_player_deathmatch.tres" id="14"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/light.tres" id="15"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/ambient_drip.tres" id="16"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/info_intermission.tres" id="17"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_armor1.tres" id="18"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_armor2.tres" id="19"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_armorInv.tres" id="20"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_artifact_super_damage.tres" id="21"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_cells.tres" id="22"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_health.tres" id="23"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_rockets.tres" id="24"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_shells.tres" id="25"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_spikes.tres" id="26"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/light_flame_large_yellow.tres" id="27"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/light_flame_small_white.tres" id="28"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/trigger_once.tres" id="29"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/weapon_grenadelauncher.tres" id="30"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/weapon_lightning.tres" id="31"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/weapon_nailgun.tres" id="32"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/weapon_rocketlauncher.tres" id="33"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/weapon_supernailgun.tres" id="34"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd/weapon_supershotgun.tres" id="35"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_group.tres" id="group"]
+
+[resource]
+script = ExtResource("1")
+fgd_name = "HumanoidSandbox"
+base_fgd_files = Array[Resource]([ExtResource("2")])
+entity_definitions = Array[Resource]([ExtResource("group"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23"), ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30"), ExtResource("31"), ExtResource("32"), ExtResource("33"), ExtResource("34"), ExtResource("35")])

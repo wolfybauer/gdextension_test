@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDSolidClass" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="1"]
+[ext_resource type="Script" path="res://trenchbroom/entities/map_mover.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+classname = "func_door"
+description = "Proximity-activated sliding door or lift. Distances use map units."
+node_class = "AnimatableBody3D"
+script_class = ExtResource("2")
+spawn_type = 2
+build_visuals = true
+build_occlusion = false
+collision_shape_type = 1
+collision_layer = 1
+collision_mask = 0
+class_properties = {
+"angle": 0.0,
+"speed": 100.0,
+"wait": 1.0,
+"lip": 8.0,
+"height": 0.0
+}

@@ -3,6 +3,8 @@ shader_type spatial;
 
 uniform float opacity : hint_range(0.0, 1.0) = 1.0;
 
+uniform bool camera_cutaway = false;
+
 uniform bool use_texture = false;
 uniform sampler2D albedo_tex : source_color;
 uniform vec4 albedo_color : source_color = vec4(1.0);
@@ -13,5 +15,5 @@ void fragment() {
         : albedo_color;
 
     ALBEDO = base.rgb;
-    ALPHA  = opacity;
+    ALPHA = opacity * (camera_cutaway ? smoothstep(0.40, 1.40, -VERTEX.z) : 1.0);
 }

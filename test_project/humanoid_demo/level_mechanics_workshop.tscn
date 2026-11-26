@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://humanoid_demo/humanoid_demo.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://trenchbroom/baked/mechanics_workshop.scn" id="2"]
+
+[node name="MechanicsWorkshop" instance=ExtResource("1")]
+imported_level = ExtResource("2")
+level_index = 3

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDSolidClass" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_solid_class.gd" id="1"]
+[ext_resource type="Script" path="res://trenchbroom/entities/map_teleport.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+classname = "trigger_teleport"
+description = "Teleports the player to the matching named marker."
+node_class = "Area3D"
+script_class = ExtResource("2")
+spawn_type = 2
+build_visuals = false
+build_occlusion = false
+collision_shape_type = 1
+collision_layer = 0
+collision_mask = 1
+class_properties = {
+"target": ""
+}

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDPointClass" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="1"]
+[ext_resource type="Script" path="res://trenchbroom/entities/map_light.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+classname = "light"
+description = "Quake point light."
+node_class = "OmniLight3D"
+script_class = ExtResource("2")
+class_properties = {
+"light": 180.0
+}

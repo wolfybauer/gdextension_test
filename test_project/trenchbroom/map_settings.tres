@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FuncGodotMapSettings" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/map/func_godot_map_settings.gd" id="1"]
+[ext_resource type="Resource" path="res://trenchbroom/fgd_main.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+entity_fgd = ExtResource("2")
+base_texture_dir = "res://trenchbroom/textures"
+clip_texture = "clip"
+skip_texture = "skip"
+origin_texture = "origin"

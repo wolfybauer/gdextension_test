@@ -1,0 +1,14 @@
+[remap]
+
+importer="func_godot.map"
+type="Resource"
+uid="uid://00sow2qw7uca"
+path="res://.godot/imported/lqdm11.map-d3a5e960f6b5c4c21f11ae25cb4b061a.tres"
+
+[deps]
+
+source_file="res://trenchbroom/maps/lqdm11.map"
+dest_files=["res://.godot/imported/lqdm11.map-d3a5e960f6b5c4c21f11ae25cb4b061a.tres"]
+
+[params]
+

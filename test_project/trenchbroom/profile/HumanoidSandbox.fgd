@@ -1,0 +1,141 @@
+@BaseClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = Phong
+[
+	_phong(choices) : "Phong shading" : 0 = 
+	[
+		0 : "Disabled"
+		1 : "Smooth shading"
+	]
+	_phong_angle(float) : "Phong smoothing angle" : "89.0"
+]
+
+@BaseClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = VertexMergeDistance
+[
+	_vertex_merge_distance(float) : "Adjustable value to snap vertices to on map build. This can reduce instances of seams between polygons." : "0.03125"
+]
+
+@BaseClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = CullInteriorFaces
+[
+	_cull_interior_faces(choices) : "If true, cull interior faces with matching vertices or faces that are flush within a larger face. Note: This has a performance impact that scales with how many brushes are in the brush entity." : 0 = 
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+]
+
+@SolidClass color(204 204 204) base(VertexMergeDistance, CullInteriorFaces) = worldspawn : "Default static world geometry. Builds a StaticBody3D with a single MeshInstance3D and a single convex CollisionShape3D shape." []
+
+@SolidClass color(204 204 204) base(Phong, VertexMergeDistance, CullInteriorFaces) = func_geo : "Static collidable geometry. Builds a StaticBody3D with a MeshInstance3D, a single concave CollisionShape3D, and an OccluderInstance3D." []
+
+@SolidClass color(204 204 204) base(Phong, VertexMergeDistance, CullInteriorFaces) = func_detail : "Static collidable geometry. Builds a StaticBody3D with a MeshInstance3D and a single concave CollisionShape3D. Does not occlude other VisualInstance3D nodes." []
+
+@SolidClass color(204 204 204) base(Phong, VertexMergeDistance, CullInteriorFaces) = func_detail_illusionary : "Static geometry with no collision. Builds a Node3D with a MeshInstance3D. Does not occlude other VisualInstance3D nodes." []
+
+@SolidClass color(204 204 204) base(Phong, VertexMergeDistance, CullInteriorFaces) = func_illusionary : "Static geometry with no collision. Builds a Node3D with a MeshInstance3D and an Occluder3D to aid in render culling of other VisualInstance3D nodes." []
+@SolidClass color(204 204 204) = func_group : "Groups brushes without creating a runtime entity." []
+
+@SolidClass color(204 204 204) = fade_wall : "Solid wall that fades when it obscures the player." []
+
+@SolidClass color(204 204 204) = fade_floor : "Solid upper floor that hides when the player is below it." []
+
+@SolidClass color(204 204 204) = func_breakable : "A physics brush that fractures when damaged. Burnable brushes spread fire." 
+[
+	health(integer) : "" : 75
+	mass(float) : "" : "5.0"
+	start_fire(choices) : "" : 0 = 
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+]
+
+@SolidClass color(204 204 204) = func_burnable : "A physics brush that fractures when damaged. Burnable brushes spread fire." 
+[
+	health(integer) : "" : 75
+	mass(float) : "" : "5.0"
+	start_fire(choices) : "" : 0 = 
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+]
+
+@SolidClass color(204 204 204) = func_door : "Proximity-activated sliding door or lift. Distances use map units." 
+[
+	angle(float) : "" : "0.0"
+	speed(float) : "" : "100.0"
+	wait(float) : "" : "1.0"
+	lip(float) : "" : "8.0"
+	height(float) : "" : "0.0"
+]
+
+@SolidClass color(204 204 204) = func_plat : "Proximity-activated sliding door or lift. Distances use map units." 
+[
+	angle(float) : "" : "0.0"
+	speed(float) : "" : "100.0"
+	wait(float) : "" : "1.0"
+	lip(float) : "" : "8.0"
+	height(float) : "" : "0.0"
+]
+
+@SolidClass color(204 204 204) = func_wall : "Static collidable map brush." []
+
+@SolidClass color(204 204 204) = func_detail_wall : "Static collidable map brush." []
+
+@SolidClass color(204 204 204) = trigger_teleport : "Teleports the player to the matching named marker." 
+[
+	target(string) : "" : ""
+]
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = info_teleport_destination : "Destination marker for trigger_teleport." 
+[
+	targetname(string) : "" : ""
+]
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = info_player_start : "Player start marker." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = info_player_deathmatch : "Alternate spawn or enemy start marker." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = light : "Quake point light." 
+[
+	light(float) : "" : "180.0"
+]
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = ambient_drip : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = info_intermission : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_armor1 : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_armor2 : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_armorInv : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_artifact_super_damage : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_cells : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_health : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_rockets : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_shells : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_spikes : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = light_flame_large_yellow : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = light_flame_small_white : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@SolidClass color(204 204 204) = trigger_once : "Imported Quake trigger marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = weapon_grenadelauncher : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = weapon_lightning : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = weapon_nailgun : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = weapon_rocketlauncher : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = weapon_supernailgun : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = weapon_supershotgun : "Imported Quake placement marker. Behaviour is reserved for the game." []

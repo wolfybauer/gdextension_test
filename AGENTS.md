@@ -35,6 +35,22 @@ For headless checks, import with `--headless --editor --import --path test_proje
 
 Use the target Godot executable to regenerate both files when changing engine builds. The files are local build inputs and are ignored by Git. The manual cross-platform GitHub Actions workflow still needs a step to supply the API files for its builds.
 
+## TrenchBroom levels
+
+Press F9 in the humanoid demo to cycle the courtyard, Solstice, The Wicked Night, and Mechanics Workshop. The editable Valve 220 maps and textures are in `test_project/trenchbroom/`. The LibreQuake notices are in the same directory. The imported arenas retain their geometry, doors, lifts, teleporters, and lights. Quake-specific item and logic entities remain placement markers.
+
+The `Humanoid Sandbox` game profile includes `fade_wall`, `fade_floor`, `func_burnable`, and `func_breakable`. Select `test_project/trenchbroom` as the TrenchBroom game path. The exported profile files are in `test_project/trenchbroom/profile` and can be copied into a `HumanoidSandbox` directory in TrenchBroom’s user games directory.
+
+After editing a map, run the headless import from the repo root so new textures are available, then regenerate the baked levels and TrenchBroom profile as needed.
+
+```sh
+~/00_apps/Godot_v4.8-beta4_linux.x86_64 --headless --editor --import --path test_project
+~/00_apps/Godot_v4.8-beta4_linux.x86_64 --headless --path test_project \
+  --script res://trenchbroom/build_maps.gd -- lqdm1 lqdm11 mechanics_workshop
+~/00_apps/Godot_v4.8-beta4_linux.x86_64 --headless --path test_project \
+  --script res://trenchbroom/export_profile.gd
+```
+
 ## Humanoid rig
 
 Instance `res://gde_test/assets/humanoid/humanoid.tscn` under the character body and assign a model scene. The bundled libraries target the humanoid-retargeted `%GeneralSkeleton` with separate torso and leg tracks. Skullguy uses the negative-Z profile. The generic humanoid uses the positive-Z profile. For a different rig, supply matching animation libraries and set the chest, hand, and stow bone names in the Inspector.

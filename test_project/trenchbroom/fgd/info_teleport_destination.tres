@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FuncGodotFGDPointClass" format=3]
+
+[ext_resource type="Script" path="res://addons/func_godot/src/fgd/func_godot_fgd_point_class.gd" id="1"]
+[ext_resource type="Script" path="res://trenchbroom/entities/map_marker.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+classname = "info_teleport_destination"
+description = "Destination marker for trigger_teleport."
+node_class = "Marker3D"
+script_class = ExtResource("2")
+node_groups = Array[String](["map_teleport_destination"])
+class_properties = {
+"targetname": ""
+}
