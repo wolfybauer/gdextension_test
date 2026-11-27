@@ -14,16 +14,29 @@ const LEVEL_SCENES := [
 	"res://humanoid_demo/level_solstice.tscn",
 	"res://humanoid_demo/level_wicked_night.tscn",
 	"res://humanoid_demo/level_mechanics_workshop.tscn",
+	"res://humanoid_demo/level_torture_pit.tscn",
+	"res://humanoid_demo/level_ghost_quarter.tscn",
+	"res://humanoid_demo/level_the_outlands.tscn",
 ]
 const MAP_CUTAWAY_SHADER = preload("res://trenchbroom/map_cutaway.gdshader")
+const CAMERA_ZOOM_STEP := 1.15
+const CAMERA_MIN_SIZE := 3.0
+const CAMERA_MAX_SIZE := 32.0
 const MAP_CAMERA_HEIGHT := 0.95
-const MAP_CAMERA_DISTANCE := 7.0
+const MAP_CAMERA_MIN_DISTANCE := 1.0
+const MAP_CAMERA_MAX_DISTANCE := 32.0
 const MAP_CAMERA_CLEARANCE := 0.25
 const PLAYER_MAX_HEALTH := 12
 const PSX_POOL := "res://humanoid_demo/psx_characters"
 
-@export var imported_level: PackedScene
+@export_range(1.0, 32.0, 0.1, "suffix:m") var imported_camera_distance := 7.0
 @export var level_index := 0
+@export var camera_outside_map := false
+@export var near_camera_fade_enabled := true:
+	set(value):
+		near_camera_fade_enabled = value
+		for material in camera_fade_materials:
+			material.set_shader_parameter("camera_cutaway", value)
 @export_range(0.0, 2.0, 0.05) var imported_ambient_energy := 0.75
 
 @export_range(0.0, 3.0, 0.05) var enemy_aim_error_scale := 1.0:
@@ -36,6 +49,7 @@ const PSX_POOL := "res://humanoid_demo/psx_characters"
 		_update_enemy_difficulty()
 @export_range(0.0, 2.0, 0.05, "suffix:s") var player_hit_recovery := 0.4
 
+@onready var imported_level := get_node_or_null("ImportedLevel") as Node3D
 @onready var player: RigidCharacterBody3D = $Player
 @onready var rig = $Player/Humanoid
 @onready var camera: Camera3D = $Player/Camera3D
@@ -55,7 +69,9 @@ var enemy_models: Array[String] = []
 var yard: Yard
 var player_health := PLAYER_MAX_HEALTH
 var last_damage := ""
-var map_camera_distance := MAP_CAMERA_DISTANCE
+var map_camera_distance := 7.0
+var map_camera_side_extent := -INF
+var camera_fade_materials: Array[ShaderMaterial] = []
 
 func _ready() -> void:
 	controller.configure(player, rig)
@@ -64,10 +80,9 @@ func _ready() -> void:
 		var original := $Level
 		remove_child(original)
 		original.queue_free()
-		var map := imported_level.instantiate()
-		add_child(map)
 		_setup_imported_camera()
-		_soften_map_cutaways(map)
+		_measure_map_extent(imported_level)
+		_soften_map_cutaways(imported_level)
 		var marker := get_tree().get_first_node_in_group("map_player_start") as Node3D
 		if marker:
 			spawn_transform.origin = marker.global_position - Vector3.UP * 0.5
@@ -125,7 +140,7 @@ func _equip(next_weapon: Node3D, index: int) -> void:
 	_update_controls()
 
 func _update_controls() -> void:
-	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact  •  K Grip tuner  •  F9 Change level%s" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed", "  •  H Hazards" if yard else ""]
+	$Controls.text = "%s  •  %s  |  1 Pistol  2 Revolver  3 Shotgun  4 SMG  5 Knife  6 Bat  7 Grenade%s\nWASD Move  •  Arrows Aim  •  Space Attack  •  E Reload  •  Shift Jump  •  Tab Swap model  •  R Spawn enemy  •  Hold/release G Throw  •  F Interact  •  K Grip tuner  •  F9 Change level  •  Scroll Zoom" % [MODELS[model_index].name, Loadout.WEAPONS[weapon_index].name if weapon else "Unarmed", "  •  H Hazards" if yard else "  •  F10 Fade %s  •  F11 Camera %s" % ["On" if near_camera_fade_enabled else "Off", "Outside" if camera_outside_map else "Room"]]
 
 func _update_health() -> void:
 	$Health.text = "Health %d / %d%s" % [player_health, PLAYER_MAX_HEALTH, last_damage]
@@ -288,6 +303,7 @@ func _setup_imported_camera() -> void:
 	atmosphere.ambient_light_color = Color(0.92, 0.95, 1.0)
 	atmosphere.ambient_light_energy = imported_ambient_energy
 	camera.environment = atmosphere
+	map_camera_distance = imported_camera_distance
 	camera.position = Vector3.UP * MAP_CAMERA_HEIGHT + camera.basis.z * map_camera_distance
 
 func _soften_map_cutaways(map: Node) -> void:
@@ -299,7 +315,7 @@ func _soften_map_cutaways(map: Node) -> void:
 		for surface in mesh.mesh.get_surface_count():
 			var material := mesh.get_active_material(surface)
 			if material is ShaderMaterial and mesh.get_parent() is FadeWall3D:
-				material.set_shader_parameter("camera_cutaway", true)
+				camera_fade_materials.append(material)
 			elif material is BaseMaterial3D:
 				if not copies.has(material):
 					var copy := ShaderMaterial.new()
@@ -310,15 +326,34 @@ func _soften_map_cutaways(map: Node) -> void:
 					if material.albedo_texture:
 						copy.set_shader_parameter("albedo_texture", material.albedo_texture)
 					copies[material] = copy
+					camera_fade_materials.append(copy)
 				mesh.set_surface_override_material(surface, copies[material])
+	near_camera_fade_enabled = near_camera_fade_enabled
+
+func _measure_map_extent(map: Node) -> void:
+	var axis := camera.global_basis.z.normalized()
+	for child in map.find_children("*", "MeshInstance3D", true, false):
+		var instance := child as MeshInstance3D
+		if instance.mesh == null:
+			continue
+		var bounds := instance.get_aabb()
+		for corner in 8:
+			var point := instance.to_global(bounds.get_endpoint(corner))
+			map_camera_side_extent = maxf(map_camera_side_extent, point.dot(axis))
 
 func _update_imported_camera(delta: float) -> void:
 	var focus := player.to_global(Vector3.UP * MAP_CAMERA_HEIGHT)
 	var axis := camera.global_basis.z.normalized()
+	if camera_outside_map:
+		# The near plane needs to clear the whole map, including the edges of the view.
+		var clear_distance := map_camera_side_extent - focus.dot(axis) + camera.near + 2.0
+		map_camera_distance = maxf(imported_camera_distance, clear_distance)
+		camera.position = Vector3.UP * MAP_CAMERA_HEIGHT + camera.basis.z * map_camera_distance
+		return
 	var query := PhysicsRayQueryParameters3D.create(
-		focus, focus + axis * MAP_CAMERA_DISTANCE, 1, [player.get_rid()])
+		focus, focus + axis * imported_camera_distance, 1, [player.get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	var available := MAP_CAMERA_DISTANCE
+	var available := imported_camera_distance
 	if not hit.is_empty():
 		available = maxf(camera.near + 0.02, focus.distance_to(hit.position) - MAP_CAMERA_CLEARANCE)
 	# Moving along the viewing axis preserves the orthographic framing and input directions.
@@ -346,8 +381,33 @@ func _physics_process(delta: float) -> void:
 	else:
 		throws.clear_preview()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton or not event.pressed or camera.projection != Camera3D.PROJECTION_ORTHOGONAL:
+		return
+	var factor: float
+	match event.button_index:
+		MOUSE_BUTTON_WHEEL_UP:
+			factor = 1.0 / CAMERA_ZOOM_STEP
+		MOUSE_BUTTON_WHEEL_DOWN:
+			factor = CAMERA_ZOOM_STEP
+		_:
+			return
+	if event.shift_pressed and imported_level:
+		imported_camera_distance = clampf(imported_camera_distance * factor, MAP_CAMERA_MIN_DISTANCE, MAP_CAMERA_MAX_DISTANCE)
+	else:
+		camera.size = clampf(camera.size * factor, CAMERA_MIN_SIZE, CAMERA_MAX_SIZE)
+	get_viewport().set_input_as_handled()
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or event.echo:
+		return
+	if event.pressed and event.physical_keycode == KEY_F11 and imported_level:
+		camera_outside_map = not camera_outside_map
+		_update_controls()
+		return
+	if event.pressed and event.physical_keycode == KEY_F10 and imported_level:
+		near_camera_fade_enabled = not near_camera_fade_enabled
+		_update_controls()
 		return
 	if event.pressed and event.physical_keycode == KEY_F9:
 		get_tree().change_scene_to_file(LEVEL_SCENES[(level_index + 1) % LEVEL_SCENES.size()])

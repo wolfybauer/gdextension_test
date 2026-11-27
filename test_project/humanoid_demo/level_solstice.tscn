@@ -4,5 +4,9 @@
 [ext_resource type="PackedScene" path="res://trenchbroom/baked/lqdm1.scn" id="2"]
 
 [node name="Solstice" instance=ExtResource("1")]
-imported_level = ExtResource("2")
 level_index = 1
+
+[node name="Level" parent="." index="0"]
+visible = false
+
+[node name="ImportedLevel" parent="." instance=ExtResource("2")]

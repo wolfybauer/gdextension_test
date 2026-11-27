@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://trenchbroom/textures/med_wood_riv1c.png" id="1_nu3l1"]
+
+[resource]
+albedo_texture = ExtResource("1_nu3l1")
+metallic_specular = 0.0
+texture_filter = 2

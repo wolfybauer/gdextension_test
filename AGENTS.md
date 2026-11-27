@@ -37,7 +37,7 @@ Use the target Godot executable to regenerate both files when changing engine bu
 
 ## TrenchBroom levels
 
-Press F9 in the humanoid demo to cycle the courtyard, Solstice, The Wicked Night, and Mechanics Workshop. The editable Valve 220 maps and textures are in `test_project/trenchbroom/`. The LibreQuake notices are in the same directory. The imported arenas retain their geometry, doors, lifts, teleporters, and lights. Quake-specific item and logic entities remain placement markers.
+Press F9 in the humanoid demo to cycle the courtyard, Solstice, The Wicked Night, Mechanics Workshop, Torture Pit, Ghost Quarter, and The Outlands. The editable Valve 220 maps and textures are in `test_project/trenchbroom/`. The LibreQuake notices are in the same directory. The imported arenas retain their geometry, doors, lifts, teleporters, and lights. Quake-specific item and logic entities remain placement markers.
 
 The `Humanoid Sandbox` game profile includes `fade_wall`, `fade_floor`, `func_burnable`, and `func_breakable`. Select `test_project/trenchbroom` as the TrenchBroom game path. The exported profile files are in `test_project/trenchbroom/profile` and can be copied into a `HumanoidSandbox` directory in TrenchBroom’s user games directory.
 
@@ -46,7 +46,7 @@ After editing a map, run the headless import from the repo root so new textures 
 ```sh
 ~/00_apps/Godot_v4.8-beta4_linux.x86_64 --headless --editor --import --path test_project
 ~/00_apps/Godot_v4.8-beta4_linux.x86_64 --headless --path test_project \
-  --script res://trenchbroom/build_maps.gd -- lqdm1 lqdm11 mechanics_workshop
+  --script res://trenchbroom/build_maps.gd -- lqdm1 lqdm11 mechanics_workshop lqdm2 lqdm6 lqdm9
 ~/00_apps/Godot_v4.8-beta4_linux.x86_64 --headless --path test_project \
   --script res://trenchbroom/export_profile.gd
 ```

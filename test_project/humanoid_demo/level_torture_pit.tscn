@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://humanoid_demo/humanoid_demo.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://trenchbroom/baked/lqdm2.scn" id="2"]
+
+[node name="TorturePit" instance=ExtResource("1")]
+level_index = 4
+
+[node name="Level" parent="." index="0"]
+visible = false
+
+[node name="ImportedLevel" parent="." instance=ExtResource("2")]

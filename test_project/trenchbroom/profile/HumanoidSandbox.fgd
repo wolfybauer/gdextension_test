@@ -31,6 +31,26 @@
 @SolidClass color(204 204 204) base(Phong, VertexMergeDistance, CullInteriorFaces) = func_detail_illusionary : "Static geometry with no collision. Builds a Node3D with a MeshInstance3D. Does not occlude other VisualInstance3D nodes." []
 
 @SolidClass color(204 204 204) base(Phong, VertexMergeDistance, CullInteriorFaces) = func_illusionary : "Static geometry with no collision. Builds a Node3D with a MeshInstance3D and an Occluder3D to aid in render culling of other VisualInstance3D nodes." []
+@SolidClass color(204 204 204) = trigger_relay : "Imported Quake trigger marker. Behaviour is reserved for the game." []
+
+@SolidClass color(204 204 204) = trigger_push : "Imported Quake trigger marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = light_flame_small_yellow : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_artifact_invulnerability : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = item_artifact_invisibility : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@SolidClass color(204 204 204) = func_button : "Static collidable map brush." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = ambient_swamp2 : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = ambient_swamp1 : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = ambient_light_buzz : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
+@PointClass size(-8.0 -8.0 -8.0, 8.0 8.0 8.0) color(204 204 204) = ambient_comp_hum : "Imported Quake placement marker. Behaviour is reserved for the game." []
+
 @SolidClass color(204 204 204) = func_group : "Groups brushes without creating a runtime entity." []
 
 @SolidClass color(204 204 204) = fade_wall : "Solid wall that fades when it obscures the player." []

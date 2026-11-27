@@ -39,8 +39,28 @@
 
 [ext_resource type="Resource" path="res://trenchbroom/fgd/func_group.tres" id="group"]
 
+[ext_resource type="Resource" path="res://trenchbroom/fgd/ambient_comp_hum.tres" id="extra_0"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/ambient_light_buzz.tres" id="extra_1"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/ambient_swamp1.tres" id="extra_2"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/ambient_swamp2.tres" id="extra_3"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/func_button.tres" id="extra_4"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_artifact_invisibility.tres" id="extra_5"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/item_artifact_invulnerability.tres" id="extra_6"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/light_flame_small_yellow.tres" id="extra_7"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/trigger_push.tres" id="extra_8"]
+
+[ext_resource type="Resource" path="res://trenchbroom/fgd/trigger_relay.tres" id="extra_9"]
+
 [resource]
 script = ExtResource("1")
 fgd_name = "HumanoidSandbox"
 base_fgd_files = Array[Resource]([ExtResource("2")])
-entity_definitions = Array[Resource]([ExtResource("group"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23"), ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30"), ExtResource("31"), ExtResource("32"), ExtResource("33"), ExtResource("34"), ExtResource("35")])
+entity_definitions = Array[Resource]([ExtResource("extra_9"), ExtResource("extra_8"), ExtResource("extra_7"), ExtResource("extra_6"), ExtResource("extra_5"), ExtResource("extra_4"), ExtResource("extra_3"), ExtResource("extra_2"), ExtResource("extra_1"), ExtResource("extra_0"), ExtResource("group"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17"), ExtResource("18"), ExtResource("19"), ExtResource("20"), ExtResource("21"), ExtResource("22"), ExtResource("23"), ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30"), ExtResource("31"), ExtResource("32"), ExtResource("33"), ExtResource("34"), ExtResource("35")])
